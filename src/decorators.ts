@@ -1,5 +1,5 @@
 import "reflect-metadata";
-import {getPropertyNames} from "./utils"
+import { getPropertyNames } from "./utils"
 
 const excludedPropertyNames = [
     "constructor","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","prototype",
@@ -98,7 +98,7 @@ export type DecoratorMethodWrapper<T> = ((method:Function,options:GetDecoratorOp
     | ((method:Function, options:any , target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<any>)=>Function)
 
 
-interface DecoratorBaseOptions {
+export interface DecoratorBaseOptions {
     id?: string | number; 
 }
 
@@ -110,7 +110,7 @@ export interface createMethodDecoratorOptions<T>{
     singleton?:boolean            // 指定方法上是否只能一个该装饰器,如果重复使用则会出错
 }
 
-interface IDecoratorOptionsAccessor{
+export interface IDecoratorOptionsAccessor{
     getDecoratorOptions(options:DecoratorBaseOptions,methodName:string | symbol,decoratorName:string):{}
 }
 

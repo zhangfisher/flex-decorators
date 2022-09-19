@@ -1,4 +1,4 @@
-import { createMethodDecorator,getDecorators,GetDecoratorOptionsProxy,DecoratorMethodWrapperOptions } from "../src/index"
+import { createMethodDecorator,getDecorators,GetDecoratorOptionsProxy,DecoratorBaseOptions } from "../src/index"
  
 
 let logs:string[] = [];
@@ -33,6 +33,26 @@ let logPro = createMethodDecorator<logOptions>("logPro",{},{
 })
 
 
+interface MyCacheOptions extends DecoratorBaseOptions{
+    key?:string,
+    ttl?:number
+}
+let myCache = createMethodDecorator<MyCacheOptions>("myCache",{
+    ttl:0
+},{
+    proxyOptions:true,
+    wrapper:function(method:Function,options:MyCacheOptions):Function{
+        let caches:{[key:string | number]:any} = {}
+        return function(this:any){
+            if(options?.id && options?.id in caches) return caches[options.id]
+            let result = method(...arguments)
+            if(options?.id) return caches[options.id] = result
+            return result
+        }
+    }
+})
+
+
 class A{
     logDecorators = {}
     constructor(){
@@ -44,6 +64,10 @@ class A{
     })
     print(info:string):string{
         return info
+    }
+    @myCache()
+    getData(){
+        return r
     }
 }
 
@@ -83,6 +107,13 @@ test("日志装饰器",(done)=>{
     a1.print("x")
     expect(logs).toStrictEqual(["Before","x","After"])
     expect(Object.keys(a1.logDecorators)).toStrictEqual(["print"])
+
+    let aa1 = new AA()
+    aa1.print("x")
+    expect(logs).toStrictEqual(["Before","x","After","x"])
+    
+
+
     done()
 })
 
@@ -103,6 +134,7 @@ test("继承的日志装饰器",(done)=>{
 test("从实例中读取日志装饰器参数",(done)=>{
     let aa1 = new AA()
     aa1.printPro("x")
+    expect(Object.keys(getDecorators(aa1,"logPro"))).toStrictEqual(["printPro"])
     expect(logs).toStrictEqual([
         "Pro:","x","LogPro-After"
     ])
