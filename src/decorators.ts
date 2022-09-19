@@ -94,8 +94,8 @@ export type DecoratorMethodWrapperOptions<T> =T extends (GetDecoratorOptionsProx
 //     (method:Function, options:DecoratorMethodWrapperOptions<T> , target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<any>):Function
 // }
 
-export type DecoratorMethodWrapper<T> = ((method:Function,options:GetDecoratorOptionsProxy<T>)=>Function) | ((method:Function,options:DecoratorMethodWrapperOptions<T>)=>Function )
-    | ((method:Function, options:DecoratorMethodWrapperOptions<T> , target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<any>)=>Function)
+export type DecoratorMethodWrapper<T> = ((method:Function,options:GetDecoratorOptionsProxy<T>)=>Function) | ((method:Function,options:T)=>Function )
+    | ((method:Function, options:any , target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<any>)=>Function)
 
 
 interface DecoratorBaseOptions {
