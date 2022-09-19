@@ -27,11 +27,10 @@ const logProWrapper = function(method:Function,getOptions:GetDecoratorOptionsPro
         if(options.suffix) logs.push(options.suffix)
     }
 }
-let logPro = createMethodDecorator<logOptions>("log",{},{
+let logPro = createMethodDecorator<logOptions>("logPro",{},{
     wrapper:logProWrapper,
     proxyOptions:true
 })
-
 
 
 class A{
@@ -68,7 +67,7 @@ class AA extends A{
     }
     @logPro({
         prefix:"LogPro-Before",
-        suffix:"LogPro--After"
+        suffix:"LogPro-After"
     })
     printPro(info:string):string{
         return info
@@ -105,7 +104,7 @@ test("从实例中读取日志装饰器参数",(done)=>{
     let aa1 = new AA()
     aa1.printPro("x")
     expect(logs).toStrictEqual([
-        "Pro","x"
+        "Pro:","x","LogPro-After"
     ])
     done()
 })
