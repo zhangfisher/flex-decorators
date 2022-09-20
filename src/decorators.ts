@@ -195,13 +195,46 @@ export function createMethodDecorator<T extends DecoratorBaseOptions,M=any,D=any
 
             // 对被装饰方法函数进行包装
             if(typeof opts?.wrapper=="function"){
-                descriptor.value = opts.wrapper(descriptor.value as M,getOptions || finalOptions,target,propertyKey,descriptor)   
+                //descriptor.value = opts.wrapper(descriptor.value as M,getOptions || finalOptions,target,propertyKey,descriptor)   
+                let oldMethod = descriptor.value  
+                let wrappedMethod: Function | M | undefined
+                let oldOptions:T 
+                descriptor.value = <M>function(this:any){                    
+                    if(typeof opts?.wrapper=="function"){
+                        let options = getOptions ? getOptions(this) : finalOptions
+                        if(!oldOptions) oldOptions = Object.assign({},options)
+                        // 比较两次调用间配置是否有变更，如果不相同则自动重新包装方法，使新的参数生效
+                        if(!wrappedMethod || isDiff(options,oldOptions)) wrappedMethod =  <M>opts.wrapper(oldMethod as M,options,target,propertyKey,descriptor)                        
+                        return (wrappedMethod as Function).apply(this,arguments)
+                    }else{
+                        return (oldMethod as Function).apply(this,arguments)
+                    }                     
+                }
             }
             return descriptor            
         };    
     }    
 }   
 
+/**
+ * 判断两个对象是否不同
+ * @param obj1 
+ * @param obj2 
+ * @returns 
+ */
+function isDiff(obj1:any, obj2:any):boolean{
+    for(let [key,value] of Object.entries(obj1)){
+        if(obj1[key] != obj2[key]) return true
+        if(Array.isArray(value) && Array.isArray(obj2[key])){
+
+        }else{
+            if(typeof(value)=="object" && typeof(obj2[key])=="object"){
+                if(isDiff(value,obj2[key])) return true                
+            }
+        }
+    }
+    return false
+}
 
 // ------------------------ TIMEOUT ------------------------ 
 export interface TimeoutOptions extends DecoratorBaseOptions {
