@@ -1,11 +1,12 @@
 import "reflect-metadata";
-import { getPropertyNames } from "./utils"
+import { getPropertyNames,AsyncFunction } from "./utils"
+import * as wrappers from "./wrappers"
+
 
 const excludedPropertyNames = [
     "constructor","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","prototype",
     "toString","valueOf","toLocaleString","length"
 ]
-
 type DecoratorList = {
     [decoratorName:string]:{
         [methodName:string]:any[]
@@ -81,47 +82,54 @@ export function getDecorators(instance: any,decoratorName?:string,options?:{cach
 } 
 
 
-export type GetDecoratorOptionsProxy<T> ={(instance:Object):T}
-export type DecoratorMethodWrapperOptions<T> =T extends (GetDecoratorOptionsProxy<T>) ? GetDecoratorOptionsProxy<T> : T
+
+export type DecoratorMethodWrapperOptions<T> =T extends (GetDecoratorOptions<T>) ? GetDecoratorOptions<T> : T
 
 /**
  * 函数包装器
  * 用来对原始方法进行包装并返回包装后的方法
  */
-// export interface DecoratorMethodWrapper<T> {
-//     (method:Function,options:GetDecoratorOptionsProxy<T>):Function 
-//     (method:Function,options:DecoratorMethodWrapperOptions<T>):Function 
-//     (method:Function, options:DecoratorMethodWrapperOptions<T> , target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<any>):Function
+// interface DecoratorMethodWrapper<T> {
+//      (method:Function,options:DecoratorMethodWrapperOptions<T>):Function 
+//      (method:Function, options:DecoratorMethodWrapperOptions<T> , target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<any>):Function
 // }
 
-export type DecoratorMethodWrapper<T> = ((method:Function,options:GetDecoratorOptionsProxy<T>)=>Function) | ((method:Function,options:T)=>Function )
-    | ((method:Function, options:any , target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<any>)=>Function)
+export type DecoratorMethodWrapper<T,M> = (
+    (method:M ,options:GetDecoratorOptions<T>)=>M ) 
+    | ((method:M ,options:DecoratorMethodWrapperOptions<T>)=>M )
+    | ((method:M , options:any, target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<M>)=>M 
+)
+
 
 
 export interface DecoratorBaseOptions {
-    id?: string | number; 
+    id?: string | number;  
+}
+type TypedMethodDecorator<T> = (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
+type DecoratorCreator<T,M,D> =  (options?:T | D)=>TypedMethodDecorator<M> 
+
+interface createMethodDecoratorOptions<T,M >{
+    wrapper?:DecoratorMethodWrapper<T,M>
+    proxyOptions?:boolean                   // 提供配置代理对象，实现从当前实例从动态读取配置参数，当启用时，可以在当前实例getDecoratorOptions(options)
+    singleton?:boolean                      // 指定方法上是否只能一个该装饰器,如果重复使用则会出错
+    defaultOptionKey?:string              // 默认配置参数的字段名称,当只提供一个参数时,视为该字段值,如retry(10)=={count:10}
+
 }
 
-type DecoratorCreator<T> =  (options?:T)=>MethodDecorator 
-
-export interface createMethodDecoratorOptions<T>{
-    wrapper?:DecoratorMethodWrapper<T>
-    proxyOptions?:boolean         // 提供配置代理对象，实现从当前实例从动态读取配置参数，当启用时，可以在当前实例getDecoratorOptions(options)
-    singleton?:boolean            // 指定方法上是否只能一个该装饰器,如果重复使用则会出错
-}
-
-export interface IDecoratorOptionsAccessor{
+interface IDecoratorOptionsAccessor{
     getDecoratorOptions(options:DecoratorBaseOptions,methodName:string | symbol,decoratorName:string):{}
 }
 
-
+export interface GetDecoratorOptions<T>{
+    (instance:Object):T
+}
 
 /**
  * 为装饰器参数创建一个访问代理，用来从当前实例中读取装饰器参数
  * @param options 
  * @returns 
  */
-function createMethodDecoratorOptionsProxy<T>(options:T,methodName:string | symbol,decoratorName:string):GetDecoratorOptionsProxy<T>{
+function createMethodDecoratorOptionsProxy<T>(options:T,methodName:string | symbol,decoratorName:string):GetDecoratorOptions<T>{
     return function(instance:Object){
         return new Proxy(options as any,{
             get(target: object, propKey: string, receiver: any){
@@ -139,8 +147,6 @@ function createMethodDecoratorOptionsProxy<T>(options:T,methodName:string | symb
     }
 }
 
-let decoratorId = 0
-
 /**
  * 
  * 创建装饰器
@@ -149,27 +155,34 @@ let decoratorId = 0
  *      wrapper:DecoratorMethodWrapper          // 对目标函数进行包装
  *      proxyOptions:true,                      // 创建一个代理用来访问实例的getDecoratorOptions()方法,如果需要动态读取装饰器参数时有用
  *      singleton:false,
- *      inherit:false,                          // 是否继承父类中id相同的装饰器参数
  * })
  * 
  * 
  */
- export function createMethodDecorator<T extends DecoratorBaseOptions>(name:string,defaultOptions?:T,opts?:createMethodDecoratorOptions<T>): DecoratorCreator<T>{
-    return (options?:T):MethodDecorator=>{        
-        return function(this:any,target: Object, propertyKey: string | symbol,descriptor:PropertyDescriptor):PropertyDescriptor{            
+ 
+export function createMethodDecorator<T extends DecoratorBaseOptions,M=any,D=any>(name:string,defaultOptions?:T,opts?:createMethodDecoratorOptions<T,M>): DecoratorCreator<T,M,D>{
+    return (options?: T | D ):TypedMethodDecorator<M>=>{        
+        return function(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<M>):TypedPropertyDescriptor<M> | void {            
             // 1. 生成默认的装饰器参数
-            let finalOptions:T = Object.assign({},defaultOptions || {},options)
-            if(!finalOptions.id) finalOptions.id = ++decoratorId 
-            
+            let finalOptions = Object.assign({},defaultOptions)
+            if(typeof(options)=="object"){
+                finalOptions =Object.assign({},defaultOptions || {},options as T)
+            }else{
+                if(opts?.defaultOptionKey && options!==undefined){
+                    (finalOptions as any)[opts?.defaultOptionKey] = options 
+                }             
+            }            
+            if(!finalOptions.id) finalOptions.id = String(propertyKey) ;
+            finalOptions = finalOptions as T
             // 2. 创建代理从当前实现读取装饰器参数
-            let getOptions:null | GetDecoratorOptionsProxy<T> = null // 用来从当前实例读取装饰器参数的代理函数
+            let getOptions:null | GetDecoratorOptions<T> = null // 用来从当前实例读取装饰器参数的代理函数
             if(opts?.proxyOptions){
                 getOptions = createMethodDecoratorOptionsProxy<T>(finalOptions,propertyKey,name)                
             }
 
             // 3. 定义元数据, 如果多个装饰器元数据会合并后放在数组中
             let metadataKey = `decorator:${name}`
-            let oldMetadata:(GetDecoratorOptionsProxy<T> | T)[] = Reflect.getOwnMetadata(metadataKey, (target as any),propertyKey);
+            let oldMetadata:(GetDecoratorOptions<T> | T)[] = Reflect.getOwnMetadata(metadataKey, (target as any),propertyKey);
             if(!oldMetadata) oldMetadata= []
             oldMetadata.push(getOptions || finalOptions)
 
@@ -182,8 +195,7 @@ let decoratorId = 0
 
             // 对被装饰方法函数进行包装
             if(typeof opts?.wrapper=="function"){
-                let wrapperOptions =( getOptions || finalOptions) as DecoratorMethodWrapperOptions<T>
-                descriptor.value = opts.wrapper(descriptor.value,wrapperOptions,target,propertyKey,descriptor)   
+                descriptor.value = opts.wrapper(descriptor.value as M,getOptions || finalOptions,target,propertyKey,descriptor)   
             }
             return descriptor            
         };    
@@ -191,3 +203,107 @@ let decoratorId = 0
 }   
 
 
+// ------------------------ TIMEOUT ------------------------ 
+export interface TimeoutOptions extends DecoratorBaseOptions {
+    value?  : number,                   // 超时时间
+    default?: any                       // 如果提供则返回该默认值而不是触发错误
+}
+export const timeout = createMethodDecorator<TimeoutOptions,AsyncFunction,number>("timeout",{value:0},{
+    wrapper: function(method:AsyncFunction,getOptions:GetDecoratorOptions<TimeoutOptions>):AsyncFunction{
+        return async function(this:any){
+            const options = getOptions(this)
+            return await wrappers.timeout(method,options).call(this,...arguments)
+        }        
+    },
+    proxyOptions:true,
+    defaultOptionKey:"value"
+})
+export interface IGetTimeoutDecoratorOptions {
+    getTimeoutDecoratorOptions(options:TimeoutOptions,methodName:string | symbol,decoratorName:string):TimeoutOptions
+}
+
+// ------------------------ RETRY ------------------------ 
+export interface RetryOptions extends DecoratorBaseOptions {
+    count?   : number              // 重试次数
+    interval?: number            //重试间隔
+    default? : any                // 失败时返回的默认值
+}
+export const retry = createMethodDecorator<RetryOptions>("retry",{count:1,interval:0},{
+    wrapper: function(method:Function,getOptions:GetDecoratorOptions<RetryOptions>):Function{
+        return function(this:any){
+            const options = getOptions(this)
+            return wrappers.retry(method,options).call(this,...arguments)
+        }        
+    },
+    proxyOptions:true,
+    defaultOptionKey:"count"
+})
+export interface IGetRetryDecoratorOptions {
+    getRetryDecoratorOptions(options:RetryOptions,methodName:string | symbol,decoratorName:string):RetryOptions
+}
+
+// ------------------------ noReentry ------------------------ 
+export interface NoReentryOptions extends DecoratorBaseOptions { 
+    silence?:boolean                      // 默认true,当重入时默默地返回,=false时会触发错误
+}
+export const noReentry = createMethodDecorator<NoReentryOptions>("noReentry",{silence:true},{
+    wrapper: function(method:Function,getOptions:GetDecoratorOptions<NoReentryOptions>):Function{
+        let noReentryMethod :Function
+        return function(this:any){ 
+            const options = getOptions(this)
+            if(!noReentryMethod) noReentryMethod= wrappers.noReentry(method,options)
+            return noReentryMethod.apply(this,arguments)
+        }        
+    },
+    proxyOptions:true,
+    defaultOptionKey:"silence"
+})
+export interface IGetNoReentryDecoratorOptions {
+    getRetryDecoratorOptions(options:NoReentryOptions,methodName:string | symbol,decoratorName:string):NoReentryOptions
+}
+
+// ------------------------ throttle ------------------------ 
+export interface ThrottleOptions extends DecoratorBaseOptions { 
+    interval:number,
+    noLeading?:boolean,
+    noTrailing?:boolean,
+    debounceMode?: boolean
+}
+export const throttle = createMethodDecorator<ThrottleOptions>("throttle",{interval:1000,noTrailing:false},{
+    wrapper: function(method:AsyncFunction,getOptions:GetDecoratorOptions<ThrottleOptions>):Function{
+        return function(this:any){ 
+            const options = getOptions(this) 
+            return wrappers.throttle(method,options).call(this,...arguments)
+        }        
+    },
+    proxyOptions:true,
+    defaultOptionKey:"interval"
+})
+
+export interface IGetThrottleDecoratorOptions {
+    getThrottleDecoratorOptions(options:ThrottleOptions,methodName:string | symbol,decoratorName:string):ThrottleOptions
+}
+
+// ------------------------ debounce ------------------------ 
+
+
+export interface DebounceOptions extends DecoratorBaseOptions { 
+    interval:number, 
+    atBegin?:boolean
+}
+export const debounce = createMethodDecorator<DebounceOptions>("debounce",{interval:1000,atBegin:true},{
+    wrapper: function(method:AsyncFunction,getOptions:GetDecoratorOptions<DebounceOptions>):Function{
+        let debounceMethod :Function
+        return function(this:any){ 
+            const options = getOptions(this) 
+            if(!debounceMethod) debounceMethod = wrappers.debounce(method,options)
+            return debounceMethod.call(this,...arguments)
+        }        
+    },
+    proxyOptions:true,
+    defaultOptionKey:"interval"
+})
+
+export interface IGetDebounceDecoratorOptions {
+    getDebounceDecoratorOptions(options:DebounceOptions,methodName:string | symbol,decoratorName:string):DebounceOptions
+}

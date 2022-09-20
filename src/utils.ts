@@ -40,7 +40,7 @@ export function applyParams(fn:AsyncFunction,...params:any[]):AsyncFunction{
     if(params.length===0) {
         return fn
     }
-    return async function (){
-        return await fn(...params)
+    return async function (this:any){
+        return await fn.call(this,...params)
     }
 }

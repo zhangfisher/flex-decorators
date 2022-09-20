@@ -1,5 +1,15 @@
-import { createMethodDecorator,getDecorators,GetDecoratorOptionsProxy,DecoratorBaseOptions } from "../src/index"
- 
+import { 
+    createMethodDecorator,getDecorators,GetDecoratorOptions,DecoratorBaseOptions ,
+    timeout,TimeoutOptions,IGetTimeoutDecoratorOptions,    
+    retry,RetryOptions,IGetRetryDecoratorOptions,
+    noReentry,
+    debounce,DebounceOptions,IGetDebounceDecoratorOptions,
+    throttle,ThrottleOptions,IGetThrottleDecoratorOptions
+} from "../src/index" 
+
+async function delay(ms:number=10){
+    return new Promise(resolve =>setTimeout(resolve,ms))
+}
 
 let logs:string[] = [];
 
@@ -19,7 +29,7 @@ let log = createMethodDecorator<logOptions>("log",{},{
     wrapper:logWrapper
 })
 
-const logProWrapper = function(method:Function,getOptions:GetDecoratorOptionsProxy<logOptions>):Function{
+const logProWrapper = function(method:Function,getOptions:GetDecoratorOptions<logOptions>):Function{
     return function(this:any){
         let options = getOptions(this)
         if(options.prefix) logs.push(options.prefix)
@@ -53,10 +63,16 @@ let myCache = createMethodDecorator<MyCacheOptions>("myCache",{
 })
 
 
-class A{
+class A implements IGetTimeoutDecoratorOptions{
     logDecorators = {}
+    timeoutValue = 100
+    runTimes = 10
     constructor(){
         this.logDecorators = getDecorators(this,"log")    
+    }
+    getTimeoutDecoratorOptions(options: TimeoutOptions, methodName: string | symbol, decoratorName: string): TimeoutOptions {
+        options.value = this.timeoutValue
+        return options
     }
     @log({
         prefix:"Before",
@@ -67,7 +83,11 @@ class A{
     }
     @myCache()
     getData(){
-        return r
+        return 1
+    }
+    @timeout()
+    async run(){
+        await delay(this.runTimes)
     }
 }
 
@@ -96,6 +116,7 @@ class AA extends A{
     printPro(info:string):string{
         return info
     }
+
 }
 
 beforeEach(()=>{
@@ -139,4 +160,167 @@ test("从实例中读取日志装饰器参数",(done)=>{
         "Pro:","x","LogPro-After"
     ])
     done()
+})
+
+
+
+test("超时装饰器",async ()=>{
+    let a1= new A()
+    // 第一运行没有超时
+    let t1 =Date.now()
+    a1.timeoutValue = 100
+    await a1.run()
+    let t2 =Date.now()
+    expect(t2-t1).toBeLessThan(a1.timeoutValue)
+    expect(t2-t1).toBeGreaterThan(a1.runTimes)
+    // 第二运行超时
+    a1.timeoutValue = 100
+    a1.runTimes = 200
+    t1 =Date.now()
+    try{
+        await a1.run()
+    }catch(e:any){
+        expect(e.message).toBe("TIMEOUT")
+    }
+})
+
+
+test("超时采用默认值的装饰器",async ()=>{
+    class X{
+        @timeout(100)
+        async run(){
+            await delay(200)
+        }
+    }    
+    let x1 = new X();
+    let t1 =Date.now()
+    try{
+        await x1.run()
+    }catch(e:any){
+        expect(e.message).toBe("TIMEOUT")        
+        let t2 =Date.now()        
+        expect(t2-t1).toBeGreaterThan(100)
+        expect(t2-t1).toBeLessThan(200)
+    }
+})
+
+test("重试装饰器",async ()=>{
+    class R implements IGetRetryDecoratorOptions{
+        interval=0
+        count=1
+        runCount = 0
+        getRetryDecoratorOptions(options: RetryOptions, methodName: string | symbol, decoratorName: string): RetryOptions {
+            options.count = this.count
+            options.interval= this.interval
+            return options
+        }
+        @retry()
+        test(){
+            this.runCount++
+            throw new Error()
+        }
+        @retry({count:2})
+        test1(){
+            this.runCount++
+            throw new Error()
+        }
+        @retry({count:2})
+        async test2(){
+            this.runCount++ 
+            await delay(100)                       
+            throw new Error()
+        }
+    } 
+    
+    let r1 = new R()
+    // 第1次执行,默认参数是重试一次
+    expect(r1.test.bind(r1)).rejects.toThrow(Error);
+    expect(r1.runCount).toBe(2)
+
+    // 第2次执行
+    r1.runCount=0
+    r1.count=2
+    expect(r1.test1.bind(r1)).rejects.toThrow(Error);
+    expect(r1.runCount).toBe(3) //第一执行失败后再重试2次共3次
+
+    // 第3次执行
+    r1.runCount=0
+    r1.count=2
+    let t1 = Date.now()
+    try{
+        await r1.test2()
+    }catch(e){
+        let t2= Date.now()
+        expect(t2-t1).toBeGreaterThan(3*100)
+        expect(r1.runCount).toBe(3) //第一执行失败后再重试2次共3次
+    }
+    // 第4次执行
+    r1.runCount=0
+    r1.count=2
+    r1.interval=100
+    t1 = Date.now()
+    try{
+        await r1.test2()
+    }catch(e){
+        let t2= Date.now()
+        expect(t2-t1).toBeGreaterThan(3*100+200)
+        expect(r1.runCount).toBe(3) //第一执行失败后再重试2次共3次
+    }
+})
+
+
+
+test("不可重入装饰器",async ()=>{
+    class X{
+        value=0
+        @noReentry()
+        async test(){
+            this.value++
+            await delay(100)
+        }
+        @noReentry(false)
+        async testError(){
+            this.value++
+            await delay(100)
+        }
+    }
+    let x = new X()
+
+    await Promise.all([x.test(),x.test(),x.test()])
+    expect(x.value).toBe(1)
+    // 由于重入时会出错,的
+    try{
+        x.value=0
+         await Promise.all([x.testError(),x.testError(),x.testError()])        
+    }catch(err:any){
+        expect(err.message).toBe("noReentry")
+    }finally{
+        expect(x.value).toBe(1)
+    }
+
+})
+test("防抖动装饰器",async ()=>{
+    let baseTime = Date.now()
+    class X{
+        runs:number[] =[]
+        interval: number = 100
+        @debounce(10)
+        async test(){
+            this.runs.push(Date.now()-baseTime);
+        }
+    }
+    let x = new X()
+
+    for(let i=0; i<100;i++){
+        await delay(5)
+        await x.test()
+    }
+    expect(x.runs.length).toBe(1)
+    await delay(10)
+    for(let i=0; i<100;i++){
+        await delay(5)
+        await x.test()
+    }
+    expect(x.runs.length).toBe(2)    
+
 })
