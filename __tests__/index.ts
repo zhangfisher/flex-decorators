@@ -1,10 +1,11 @@
 import { 
-    createMethodDecorator,getDecorators,GetDecoratorOptions,DecoratorBaseOptions ,
+    createMethodDecorator,getDecorators,MethodDecoratorOptions ,
     timeout,TimeoutOptions,IGetTimeoutDecoratorOptions,    
     retry,RetryOptions,IGetRetryDecoratorOptions,
     noReentry,
-    debounce,DebounceOptions,IGetDebounceDecoratorOptions,
-    throttle,ThrottleOptions,IGetThrottleDecoratorOptions
+    debounce,DebounceOptions,
+    throttle,ThrottleOptions,
+    resetMethodDecorator
 } from "../src/index" 
 
 async function delay(ms:number=10){
@@ -28,22 +29,23 @@ const logWrapper = function(method:Function,options:logOptions):Function{
 let log = createMethodDecorator<logOptions>("log",{},{
     wrapper:logWrapper
 })
+type logProMethod = (info:string)=>string
 
-const logProWrapper = function(method:Function,getOptions:GetDecoratorOptions<logOptions>):Function{
-    return function(this:any){
-        let options = getOptions(this)
+const logProWrapper = function(method:logProMethod,options:logOptions):logProMethod{
+    return function(this:any,info:string){
         if(options.prefix) logs.push(options.prefix)
-        logs.push(method(...arguments))
+        logs.push(method(arguments[0]))
         if(options.suffix) logs.push(options.suffix)
+        return ""
     }
 }
-let logPro = createMethodDecorator<logOptions>("logPro",{},{
+let logPro = createMethodDecorator<logOptions,logProMethod>("logPro",{},{
     wrapper:logProWrapper,
     proxyOptions:true
 })
 
 
-interface MyCacheOptions extends DecoratorBaseOptions{
+interface MyCacheOptions extends MethodDecoratorOptions{
     key?:string,
     ttl?:number
 }
@@ -172,7 +174,7 @@ test("超时装饰器",async ()=>{
     await a1.run()
     let t2 =Date.now()
     expect(t2-t1).toBeLessThan(a1.timeoutValue)
-    expect(t2-t1).toBeGreaterThan(a1.runTimes)
+    expect(t2-t1).toBeGreaterThanOrEqual(a1.runTimes)
     // 第二运行超时
     a1.timeoutValue = 100
     a1.runTimes = 200
@@ -323,4 +325,131 @@ test("防抖动装饰器",async ()=>{
     }
     expect(x.runs.length).toBe(2)    
 
+})
+
+test("节流装饰器",async ()=>{
+    let baseTime = Date.now()
+    class X{
+        runs:number[] =[]
+        interval: number = 100
+        @throttle(20)
+        async test(){
+            this.runs.push(Date.now()-baseTime);
+        }
+    }
+    let x = new X()
+    for(let i=0; i<100;i++){
+        await delay(5)
+        await x.test()
+    }
+    expect(x.runs.length).toBeLessThan(60)
+    expect(x.runs.length).toBeGreaterThan(40)
+})
+
+test("装饰器参数变更导致重新包装函数",async ()=>{
+    // 执行计数
+    interface countOptions  {
+        id?:number
+        max:number
+        prefix?:string
+        items?:number[]
+    }
+    let count = createMethodDecorator<countOptions>("count", {max:10,prefix:"Hello",items:[1,2]},{
+        wrapper:(method:Function,options:countOptions)=>{
+            let count = 0;  // 在一个闭包中保存计数
+            return function(this:any){
+                count++
+                if(count>options.max) count =0
+                this.current = count
+            }
+        },
+        proxyOptions:true
+    })
+    class X {
+        customOptions: Record<string,any> = {}
+        max: number = 10
+        current: number = 0
+        constructor(){
+
+        }
+        getCountDecoratorOptions(options:countOptions){
+            options.max = this.max
+            return options
+        }
+        @count()
+        go(){
+
+        }
+    }
+    let x = new X()
+    // 执行11次后，计数变为0
+    x.max =10
+    for(let i = 0; i<11;i++){
+        x.go()
+    }
+    expect(x.current).toBe(0)
+    // 执行11次后，计数变为0
+    x.max =100 // 重新修改了装饰器参数，因此将重新包装函数使新参数生效
+    for(let i = 0; i<101;i++){
+        x.go()
+    }
+    expect(x.current).toBe(0)
+})
+test("手动重置装饰器重新包装函数",async ()=>{
+    // 执行计数
+    interface countOptions  {
+        id?:number
+        max:number
+        prefix?:string
+        items?:number[]
+    }
+    let count = createMethodDecorator<countOptions>("count", {max:10,prefix:"Hello",items:[1,2]},{
+        wrapper:(method:Function,options:countOptions)=>{
+            let count = 0;  // 在一个闭包中保存计数
+            return function(this:any){
+                count++
+                if(count>options.max) count =0
+                this.current = count
+            }
+        },
+        proxyOptions:true,
+        autoReWrapper:false
+    })
+    class X {
+        customOptions: Record<string,any> = {}
+        max: number = 10
+        current: number = 0
+        constructor(){
+
+        }
+        getCountDecoratorOptions(options:countOptions){
+            options.max = this.max
+            return options
+        }
+        @count({id:999})
+        go(){
+
+        }
+    }
+    let x = new X()
+    // 执行11次后，计数变为0
+    x.max =10
+    for(let i = 0; i<11;i++){
+        x.go()
+    }
+    expect(x.current).toBe(0)
+    // 执行11次后，计数变为0
+    x.max =100 // 重新修改了装饰器参数，因此将重新包装函数使新参数生效
+    resetMethodDecorator(x,"count")
+    for(let i = 0; i<101;i++){
+        x.go()
+    }
+    expect(x.current).toBe(0)
+    x.max =200 // 重新修改了装饰器参数，因此将重新包装函数使新参数生效
+    resetMethodDecorator(x,"count",999)
+    for(let i = 0; i<201;i++){
+        x.go()
+        if(i<200) expect(x.current).toBe(i+1)
+    }
+    expect(x.current).toBe(0)
 })
