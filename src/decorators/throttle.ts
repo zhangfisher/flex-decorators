@@ -1,9 +1,9 @@
-import { createMethodDecorator } from "../methods"
-import type {MethodDecoratorOptions} from "../methods"
+import { createDecorator } from "../methods"
+import type {DecoratorOptions} from "../methods"
 import type {AsyncFunction } from "../types"
 import throttleWrapper from "../wrappers/throttle"
 
-export interface ThrottleOptions extends MethodDecoratorOptions { 
+export interface ThrottleOptions extends DecoratorOptions { 
     interval     : number,
     noLeading?   : boolean,
     noTrailing?  : boolean,
@@ -13,7 +13,7 @@ export interface IGetThrottleDecoratorOptions {
     getThrottleDecoratorOptions(options:ThrottleOptions,methodName:string | symbol,decoratorName:string):ThrottleOptions
 }
 
-export const throttle = createMethodDecorator<ThrottleOptions>("throttle",
+export const throttle = createDecorator<ThrottleOptions>("throttle",
     {
         interval    : 1000,
         noTrailing  : false,          // 最后一次调用时是否执行

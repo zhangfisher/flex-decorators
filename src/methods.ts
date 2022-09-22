@@ -1,18 +1,22 @@
 import "reflect-metadata";
+import { DecoratorManager } from "./manager";
 import { getPropertyNames,isDiff,pick } from "./utils"
-import * as wrappers from "./wrappers"
-import type { AsyncFunction } from "./types"
-
 
 const excludedPropertyNames = [
     "constructor","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","prototype",
     "toString","valueOf","toLocaleString","length"
 ]
+
+
+/**
+ * getDecorators返回的当前实例的装饰器信息
+ * {[装饰器名称]:{
+ *      [方法名称]:[<装饰器参数>,<装饰器参数>,<装饰器参数代理>]
+ * }}
+ */
 type DecoratorList = {
-    [decoratorName:string]:{
-        [methodName:string]:any[]
-    }
-} 
+    [decoratorName:string]:{[methodName:string]:any[]} 
+}  
 /**
  * 获取指定装饰器的方法
  * 
@@ -35,6 +39,11 @@ export function getDecorators(instance: any,decoratorName?:string,options?:{cach
         }        
     }
     let metadatas:DecoratorList = {} ;
+    if(decoratorName){
+        metadatas = metadatas as DecoratorList
+    }else{
+        metadatas = metadatas as DecoratorList
+    }
 
     let propertyNames = getPropertyNames(instance)
     propertyNames.forEach(propertyName =>{
@@ -101,26 +110,27 @@ export type DecoratorMethodWrapper<T,M> = (
 )
 
 
-export interface MethodDecoratorOptions {
+export interface DecoratorOptions {
     id?: string | number;  
 }
 type TypedMethodDecorator<T> = (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
-type MethodDecoratorCreator<T,M,D> =  (options?:T | D)=>TypedMethodDecorator<M> 
+type DecoratorCreator<T,M,D> =  (options?:T | D)=>TypedMethodDecorator<M> 
 
-interface createMethodDecoratorOptions<T,M >{
+interface createDecoratorOptions<T,M>{
     wrapper?:DecoratorMethodWrapper<T,M>
     proxyOptions?:boolean                   // 提供配置代理对象，实现从当前实例从动态读取配置参数，当启用时，可以在当前实例getDecoratorOptions(options)
     singleton?:boolean                      // 指定方法上是否只能一个该装饰器,如果重复使用则会出错
     defaultOptionKey?:string                // 默认配置参数的字段名称,当只提供一个参数时,视为该字段值,如retry(10)=={count:10}
     autoReWrapper?: boolean                 // 当检测到装饰器参数发生变化时自动重新包装被装饰函数，以便使新的装饰器参数重新生效
-
+    autoInjectManager?:boolean              // 自动注入管理器，当第一次调用时会实例化管理器
+    manager?:DecoratorManager               // 装饰器管理器类
 }
 export interface GetDecoratorOptions<T>{
     (instance:Object):T
 }
 
 interface IDecoratorOptionsAccessor{
-    getDecoratorOptions(options:MethodDecoratorOptions,methodName:string | symbol,decoratorName:string):{}
+    getDecoratorOptions(options:DecoratorOptions,methodName:string | symbol,decoratorName:string):{}
 }
 
 
@@ -130,7 +140,7 @@ interface IDecoratorOptionsAccessor{
  * @param options 
  * @returns 
  */
-function createMethodDecoratorOptionsProxy<T>(options:T,methodName:string | symbol,decoratorName:string):GetDecoratorOptions<T>{
+function createDecoratorOptionsProxy<T>(options:T,methodName:string | symbol,decoratorName:string):GetDecoratorOptions<T>{
     return function(instance:Object){
         return new Proxy(options as any,{
             get(target: object, propKey: string, receiver: any){
@@ -155,7 +165,7 @@ function createMethodDecoratorOptionsProxy<T>(options:T,methodName:string | symb
  * @param decoratorOptions 
  * @returns 
  */
-function decoratorIsDirty<T extends MethodDecoratorOptions>(instance:any,decoratorName:string,decoratorOptions:T):boolean{
+function decoratorIsDirty<T extends DecoratorOptions>(instance:any,decoratorName:string,decoratorOptions:T):boolean{
     if(instance.__DIRTY_METHOD_DECORATORS && (decoratorName in instance.__DIRTY_METHOD_DECORATORS)){
         if(instance.__DIRTY_METHOD_DECORATORS[decoratorName].includes("*")){
             delete instance.__DIRTY_METHOD_DECORATORS[decoratorName]
@@ -191,7 +201,7 @@ function decoratorIsDirty<T extends MethodDecoratorOptions>(instance:any,decorat
  * 
  */
  
-export function createMethodDecorator<T extends MethodDecoratorOptions,M=any,D=any>(name:string,defaultOptions?:T,opts?:createMethodDecoratorOptions<T,M>): MethodDecoratorCreator<T,M,D>{
+export function createDecorator<T extends DecoratorOptions,M=any,D=any>(decoratorName:string,defaultOptions?:T,opts?:createDecoratorOptions<T,M>): DecoratorCreator<T,M,D>{
     return (options?: T | D ):TypedMethodDecorator<M>=>{        
         return function(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<M>):TypedPropertyDescriptor<M> | void {            
             // 1. 生成默认的装饰器参数
@@ -208,18 +218,18 @@ export function createMethodDecorator<T extends MethodDecoratorOptions,M=any,D=a
             // 2. 创建代理从当前实现读取装饰器参数
             let getOptions:null | GetDecoratorOptions<T> = null // 用来从当前实例读取装饰器参数的代理函数
             if(opts?.proxyOptions){
-                getOptions = createMethodDecoratorOptionsProxy<T>(finalOptions,propertyKey,name)                
+                getOptions = createDecoratorOptionsProxy<T>(finalOptions,propertyKey,decoratorName)                
             }
 
             // 3. 定义元数据, 如果多个装饰器元数据会合并后放在数组中
-            let metadataKey = `decorator:${name}`
+            let metadataKey = `decorator:${decoratorName}`
             let oldMetadata:(GetDecoratorOptions<T> | T)[] = Reflect.getOwnMetadata(metadataKey, (target as any),propertyKey);
             if(!oldMetadata) oldMetadata= []
             oldMetadata.push(getOptions || finalOptions)
 
             // 4.是否只允许使用一个装饰器
             if(oldMetadata.length>0 && opts?.singleton){
-                throw new Error(`Only one decorator<${name}> can be used on the get method<${<string>propertyKey}>`)
+                throw new Error(`Only one decorator<${decoratorName}> can be used on the get method<${<string>propertyKey}>`)
             }
             
             Reflect.defineMetadata(metadataKey, oldMetadata,(target as any),propertyKey);
@@ -228,11 +238,12 @@ export function createMethodDecorator<T extends MethodDecoratorOptions,M=any,D=a
             if(typeof opts?.wrapper=="function"){
                 let oldMethod = descriptor.value  
                 let wrappedMethod: Function | M | undefined
-                let oldOptions:T 
-                descriptor.value = <M>function(this:any){                    
+                let oldOptions:T                 
+                descriptor.value = <M>async function(this:any){                    
                     if(typeof opts?.wrapper=="function"){                        
-                        // 读取装饰器参数
-                        let options = getOptions ? getOptions(this) : finalOptions
+                        // 读取装饰器参数                        
+                        let options = getOptions ? await getOptions(this) :finalOptions
+
                         // 触发重新对被装饰函数进行包装的条件： 
                         // - autoReWrapper=true && isDiff(oldOptions,options)
                         // - 调用resetMethodDecorator(this,<装饰器名称>,<id>)
@@ -243,7 +254,7 @@ export function createMethodDecorator<T extends MethodDecoratorOptions,M=any,D=a
                             needReWrapper = isDiff(oldOptions,options)
                         }
                         if(!needReWrapper){
-                            needReWrapper = decoratorIsDirty<T>(this,name,options)
+                            needReWrapper = decoratorIsDirty<T>(this,decoratorName,options)
                         }
                         // 包装被装饰函数
                         if(!wrappedMethod || needReWrapper) {  
@@ -277,11 +288,4 @@ export function resetMethodDecorator(instance:any, decoratorName:string,decorato
     if(!instance.__DIRTY_METHOD_DECORATORS[decoratorName].includes(decoratorId)){
         instance.__DIRTY_METHOD_DECORATORS[decoratorName].push(decoratorId)
     }
-}
-
-
-
-
-
-
-
+} 

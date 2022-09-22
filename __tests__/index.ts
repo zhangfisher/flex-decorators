@@ -1,5 +1,5 @@
 import { 
-    createMethodDecorator,getDecorators,MethodDecoratorOptions ,
+    createDecorator,getDecorators,DecoratorOptions ,
     timeout,TimeoutOptions,IGetTimeoutDecoratorOptions,    
     retry,RetryOptions,IGetRetryDecoratorOptions,
     noReentry,
@@ -26,7 +26,7 @@ const logWrapper = function(method:Function,options:logOptions):Function{
         if(options.suffix) logs.push(options.suffix)
     }
 }
-let log = createMethodDecorator<logOptions>("log",{},{
+let log = createDecorator<logOptions>("log",{},{
     wrapper:logWrapper
 })
 type logProMethod = (info:string)=>string
@@ -39,17 +39,17 @@ const logProWrapper = function(method:logProMethod,options:logOptions):logProMet
         return ""
     }
 }
-let logPro = createMethodDecorator<logOptions,logProMethod>("logPro",{},{
+let logPro = createDecorator<logOptions,logProMethod>("logPro",{},{
     wrapper:logProWrapper,
     proxyOptions:true
 })
 
 
-interface MyCacheOptions extends MethodDecoratorOptions{
+interface MyCacheOptions extends DecoratorOptions{
     key?:string,
     ttl?:number
 }
-let myCache = createMethodDecorator<MyCacheOptions>("myCache",{
+let myCache = createDecorator<MyCacheOptions>("myCache",{
     ttl:0
 },{
     proxyOptions:true,
@@ -154,14 +154,13 @@ test("继承的日志装饰器",(done)=>{
 
 
 
-test("从实例中读取日志装饰器参数",(done)=>{
+test("从实例中读取日志装饰器参数",async ()=>{
     let aa1 = new AA()
-    aa1.printPro("x")
+    await aa1.printPro("x")
     expect(Object.keys(getDecorators(aa1,"logPro"))).toStrictEqual(["printPro"])
     expect(logs).toStrictEqual([
         "Pro:","x","LogPro-After"
-    ])
-    done()
+    ]) 
 })
 
 
@@ -236,13 +235,13 @@ test("重试装饰器",async ()=>{
     
     let r1 = new R()
     // 第1次执行,默认参数是重试一次
-    expect(r1.test.bind(r1)).rejects.toThrow(Error);
+    await expect(r1.test.bind(r1)).rejects.toThrow(Error);
     expect(r1.runCount).toBe(2)
 
     // 第2次执行
     r1.runCount=0
     r1.count=2
-    expect(r1.test1.bind(r1)).rejects.toThrow(Error);
+    await expect(r1.test1.bind(r1)).rejects.toThrow(Error);
     expect(r1.runCount).toBe(3) //第一执行失败后再重试2次共3次
 
     // 第3次执行
@@ -354,7 +353,7 @@ test("装饰器参数变更导致重新包装函数",async ()=>{
         prefix?:string
         items?:number[]
     }
-    let count = createMethodDecorator<countOptions>("count", {max:10,prefix:"Hello",items:[1,2]},{
+    let count = createDecorator<countOptions>("count", {max:10,prefix:"Hello",items:[1,2]},{
         wrapper:(method:Function,options:countOptions)=>{
             let count = 0;  // 在一个闭包中保存计数
             return function(this:any){
@@ -403,7 +402,7 @@ test("手动重置装饰器重新包装函数",async ()=>{
         prefix?:string
         items?:number[]
     }
-    let count = createMethodDecorator<countOptions>("count", {max:10,prefix:"Hello",items:[1,2]},{
+    let count = createDecorator<countOptions>("count", {max:10,prefix:"Hello",items:[1,2]},{
         wrapper:(method:Function,options:countOptions)=>{
             let count = 0;  // 在一个闭包中保存计数
             return function(this:any){
@@ -435,20 +434,20 @@ test("手动重置装饰器重新包装函数",async ()=>{
     // 执行11次后，计数变为0
     x.max =10
     for(let i = 0; i<11;i++){
-        x.go()
+        await x.go()
     }
     expect(x.current).toBe(0)
     // 执行11次后，计数变为0
     x.max =100 // 重新修改了装饰器参数，因此将重新包装函数使新参数生效
     resetMethodDecorator(x,"count")
     for(let i = 0; i<101;i++){
-        x.go()
+        await x.go()
     }
     expect(x.current).toBe(0)
     x.max =200 // 重新修改了装饰器参数，因此将重新包装函数使新参数生效
     resetMethodDecorator(x,"count",999)
     for(let i = 0; i<201;i++){
-        x.go()
+        await x.go()
         if(i<200) expect(x.current).toBe(i+1)
     }
     expect(x.current).toBe(0)

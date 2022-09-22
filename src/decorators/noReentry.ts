@@ -1,8 +1,8 @@
-import { createMethodDecorator } from "../methods"
-import type {MethodDecoratorOptions} from "../methods"
+import { createDecorator } from "../methods"
+import type {DecoratorOptions} from "../methods"
 import noReentryWrapper from "../wrappers/noReentry"
  
-export interface NoReentryOptions extends MethodDecoratorOptions { 
+export interface NoReentryOptions extends DecoratorOptions { 
     silence?:boolean           // 默认true,当重入时默默地返回,=false时会触发错误
 }
 
@@ -11,7 +11,7 @@ export interface IGetNoReentryDecoratorOptions {
 }
 
 
-export const noReentry = createMethodDecorator<NoReentryOptions>("noReentry",{silence:true},{
+export const noReentry = createDecorator<NoReentryOptions>("noReentry",{silence:true},{
     wrapper: function(method:Function,options:NoReentryOptions):Function{
         return noReentryWrapper(method,options)
     },

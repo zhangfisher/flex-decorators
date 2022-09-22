@@ -1,9 +1,9 @@
-import { createMethodDecorator } from "../methods"
-import type {MethodDecoratorOptions} from "../methods"
+import { createDecorator } from "../methods"
+import type {DecoratorOptions} from "../methods"
 import reliableWrapper from "../wrappers/reliable"
 import type { AsyncFunction } from "../types"
  
-export interface ReliableOptions extends MethodDecoratorOptions { 
+export interface ReliableOptions extends DecoratorOptions { 
     timeout         : number,                            // 执行失败超时,默认为1分钟
     retryCount      : number,                            // 重试次数
     retryInterval   : number,                            // 重试间隔
@@ -16,7 +16,7 @@ export interface IGetReliableDecoratorOptions {
     getRetryDecoratorOptions(options:ReliableOptions,methodName:string | symbol,decoratorName:string):ReliableOptions
 }
 
-export const reliable = createMethodDecorator<ReliableOptions>("reliable",
+export const reliable = createDecorator<ReliableOptions>("reliable",
     {
         timeout      : 0,                            // 执行失败超时,默认为1分钟
         retryCount   : 0,                            // 重试次数
