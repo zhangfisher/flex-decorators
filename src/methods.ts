@@ -105,7 +105,7 @@ export type DecoratorMethodWrapperOptions<T> =T extends (GetDecoratorOptions<T>)
 // }
 
 export type DecoratorMethodWrapper<T,M> = (
-    (method:M ,options:T)=>M )
+    (method:M ,options:T,manager:any)=>M )
     | ((method:M , options:any, target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<M>)=>M 
 )
 
@@ -241,6 +241,14 @@ export function createDecorator<T extends DecoratorOptions,M=any,D=any>(decorato
                 let oldOptions:T                 
                 descriptor.value = <M>async function(this:any){                    
                     if(typeof opts?.wrapper=="function"){                        
+                        // 获取读取装饰器管理器
+                        let manager : DecoratorManager = opts.manager ? opts.manager : this[`${decoratorName}Manager`]
+                        // 判断管理器是否已经准备就绪
+                        if(manager){
+                            if(!manager.ready) await manager.init()
+                            if(!manager.running) await manager.start()
+                        }
+
                         // 读取装饰器参数                        
                         let options = getOptions ? await getOptions(this) :finalOptions
 

@@ -1,36 +1,7 @@
 /**
  * 
  * 排队调用被装饰的方法
-
-    import queueManager from "../"
-
-    class QueueManager extends DecoratorManager{
-        
-        start(){
-
-        }
-        stop(){
-
-        }        
-    }
-
-    class myClass{
-
-    @QueueManager()
-    DecoratorManager queueManager 
-
-    constructor(){
-        this.queueManager.start()
-    }
-
-    @queue(54)
-    go(){
-
-    }
-
-    }
-
-
+ 
 
  */
 import { createDecorator } from "../methods"
@@ -42,8 +13,8 @@ export interface QueueOptions extends DecoratorOptions {
     size?  : number,                    // 队列大小
     default?: any                       // 如果提供则返回该默认值而不是触发错误
 }
-export interface IGetTimeoutDecoratorOptions {
-    getTimeoutDecoratorOptions(options:QueueOptions,methodName:string | symbol,decoratorName:string):QueueOptions
+export interface IGetQueueDecoratorOptions {
+    getQueueDecoratorOptions(options:QueueOptions,methodName:string | symbol,decoratorName:string):QueueOptions
 }
 
 export const queue = createDecorator<QueueOptions,AsyncFunction,number>("queue",

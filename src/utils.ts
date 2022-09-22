@@ -21,6 +21,10 @@ export async function delay(ms:number=0) {
     return Array.from(new Set<string>(propertyNames));
 }
 
+export function hasOwnProperty(instance: any, propertyName: string) :boolean{
+    return getPropertyNames(instance).includes(propertyName);
+}
+
 /**
  * 提供对象中的指定健值
  * @param obj 
