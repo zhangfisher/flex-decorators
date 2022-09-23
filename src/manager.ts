@@ -2,8 +2,10 @@
  * 装饰器管理器
  */
 
-import { getDecorators } from "./methods";
-import { hasOwnProperty } from "./utils";
+import { getDecorators } from "./decorator";
+import { hasOwnProperty,firstUpperCase } from "./utils";
+import { asyncSignal, IAsyncSignal } from "./asyncSignal"
+import { AllowNull } from "./types";
 
 interface DecoratorList{
     [methodName: string]: {
@@ -14,13 +16,10 @@ interface DecoratorList{
 type DecoratorManageMode = 'none' | 'auto' | 'manual'
 
 interface IDecoratorManager{
-    get mode():DecoratorManageMode
-    get ready(): boolean                        // 
-    get running(): boolean     
-    init(...args: any[]): Awaited<Promise<any>> 
-    start(...args: any[]):Awaited<Promise<any>>
-    stop(...args: any[]): Awaited<Promise<any>>
-    [Symbol.iterator]():any             // 迭代装饰器所有方法
+    get running(): boolean         
+    onStart(...args: any[]):Awaited<Promise<any>>
+    onStop(...args: any[]): Awaited<Promise<any>>
+    start(timeout?:number): Awaited<Promise<any>>
 }
 
 export interface DecoratorManagerOptions{
@@ -31,87 +30,82 @@ export interface DecoratorManagerOptions{
  * 管理器的状态
  */
 export enum DecoratorManagerStatus {
-    INITIAL      = 0,
-    INITIALIZING = 1,
-    READY        = 3,
-    STARTING     = 4,
-    RUNNING      = 5,
-    STOPING      = 6,
-    STOPED       = 7,
-    ERROR        = 9
+    INITIAL      = 0,                           // 未初始化
+    STARTING     = 4,                           // 正在启动
+    RUNNING      = 5,                           // 运行状态
+    STOPPING     = 6,                           // 正在停止
+    STOPPED      = 7,                           // 已停止
+    ERROR        = 9                            // ERROR
 }
 
 /**
  * 装饰器管理器基类
  */
 export class DecoratorManager implements IDecoratorManager{    
-    #instance:any = null                                   // 指向类实例
-    #decoratorName:string = ""                             // 装饰器名称
+    #decoratorName:string = ""                                              // 装饰器名称
     #options:Record<string,any>  
-    #ready:boolean
-    #running: boolean 
-    #mode:string = 'none'                                  // 管理模式，none=无，auto=自动,manual=手动
-    constructor(instance:any,decoratorName:string,options:Record<string,any>){
-        this.#instance = instance;
+    #status: DecoratorManagerStatus = DecoratorManagerStatus.INITIAL        // 状态
+    #instances:any[] = []                                                   // 保存装饰实例引用 
+    #runningSignal:AllowNull<IAsyncSignal>
+    constructor(decoratorName:string,options:Record<string,any>){
         this.#decoratorName=decoratorName
-        this.#ready = false
-        this.#running = false
-        instance[`${decoratorName}DecoratorManager`] = this
         this.#options = Object.assign({
             enable:true
         },options)
-    }
-    get ready(): boolean { return this.#ready }
-    get running(): boolean { return this.#running   }
-
-    async _init(...args: any[]) {
-        try{
-            await this.init(...args)
-            this.#ready = true
-        }catch(err){            
-        }
-    }
-    async init(...args: any[]) {
-        this.#ready = true
-    }
-    /**
-     * 迭代当前实例使用了指定装饰器的所有信息
-     * @returns   {Object} {[方法名称]:[<装饰器参数>,<装饰器参数>,...,<装饰器参数代理>]}
-     */
-    [Symbol.iterator]() {
-        return Object.entries(getDecorators(this.#instance,this.#decoratorName))[Symbol.iterator]()
-    }
-    get mode(): DecoratorManageMode {
-        throw new Error("Method not implemented.");
-    }
-
-    /**
-     * 绑定当前实例
-     * @param instance 
-     */
-    bind(instance:any){
-        this.#instance = instance
-    }
-    async _start(...args: any[]){
-        
-    }
-    async start(...args: any[]){
-        
-    }
-    async stop(...args: any[]){
-        throw new Error("Method not implemented.");
-    } 
-    get instance(){return this.#options}
-    get options(){return this.#instance}
-    get decoratorName(){return this.#decoratorName}
+    
+    }    
     get enable():boolean{ return this.#options.enable  }
     set enable(value:boolean){ this.#options.enable =value }
+    get decoratorName():string { return this.#decoratorName }
+    get status():DecoratorManagerStatus { return this.#status }
+    get running(): boolean { return this.#status==DecoratorManagerStatus.RUNNING  } 
+    
+    /**
+     * 启动管理器，并且等待启动完成
+     */
+    async start(timeout?:number) {
+        if(this.#status==DecoratorManagerStatus.RUNNING) return
+        // 如果正处于启动中，则等待
+        if(this.#status == DecoratorManagerStatus.STARTING && this.#runningSignal){
+            return await this.#runningSignal(timeout)
+        }
+        if(![DecoratorManagerStatus.INITIAL,DecoratorManagerStatus.ERROR].includes(this.#status)){
+            throw new Error(`Unload start <${this.#decoratorName}> decoratorManager`)
+        }
+        try{
+            this.#status = DecoratorManagerStatus.STARTING            
+            this.#runningSignal = asyncSignal()
+            await this.onStart()
+            this.#status = DecoratorManagerStatus.RUNNING
+            this.#runningSignal.resolve()
+        }catch(e:any){
+            this.#status = DecoratorManagerStatus.ERROR;
+            if(this.#runningSignal) this.#runningSignal.reject(e)
+        }        
+    }
+    /**
+     * 将使用装饰器的实例注册到管理器中
+     * @param instance 
+     */
+    register(instance:DecoratorManager){
+        if(!this.#instances.includes(instance)) this.#instances.push(instance)
+    }
+    /**
+     * 由子类继承用来实现具体的启动逻辑
+     * @param args 
+     */
+    async onStart(...args: any[]){
+        //throw new Error("Method not implemented.");
+    }
+    async onStop(...args: any[]){
+        //throw new Error("Method not implemented.");
+    } 
 } 
 
 
 export interface DecoratorManagerOptions{
-    enable:boolean                              // 是否启用/禁用装饰器
-    scope?: 'class' | 'instance'                 // 管理器作用域
+    enable:boolean                                  // 是否启用/禁用装饰器
+    scope?: 'class' | 'instance'                    // 管理器作用域
 }
 
 
@@ -122,12 +116,15 @@ type TypedClassDecorator<T> = <T extends Constructor>(target: T) => T | void;
  * 
  * 创建管理器装饰器
  * 
- *  该装饰器会在被装饰的类原型上生成一个${decoratorName}Manager的属性
+ *  该装饰器会在被装饰的类原型上生成一个${decoratorName}Manager的属性用来获取管理器实例
  *  通过该属性可以读取到当前类指定装饰器的所有信息
  * 
+ * 管理器实例会自动创建保存在实例或者类静态变量上__${decoratorName}ManagerInstance__
  * 
  * 
- *  @cacheManager({
+ * 
+ *  @cacheScope({
+ *      enable:<true/false>                  // 是否启用/禁用装饰器功能,只会调用原始方法而不会调用装饰器提供的功能
  *      scope:"class"
  * })
  *  T: 管理器类
@@ -135,22 +132,25 @@ type TypedClassDecorator<T> = <T extends Constructor>(target: T) => T | void;
  */
  export function createManagerDecorator<T extends DecoratorManager,O extends DecoratorManagerOptions>(decoratorName:string,managerClass :typeof DecoratorManager,  defaultOptions?:O){
     return (options?: O):TypedClassDecorator<T>=>{
-        let finalOptions = Object.assign({scope:"instance"},defaultOptions,options)
+        let finalOptions = Object.assign({scope:"instance",enable:true},defaultOptions,options)
         return function<T extends Constructor>(this:any,targetClass: T){  
-            let managerPropName = `${decoratorName}Manager`
+            let managerPropName = `get${firstUpperCase(decoratorName)}Manager`
             let managerInstancePropName = `__${decoratorName}ManagerInstance__`
             Object.defineProperty(targetClass.prototype,managerPropName,
                 {
                     get: function() { 
-                        let scope =  finalOptions.scope == 'class' ? this.constructor : this
-                        if(!hasOwnProperty(scope,managerInstancePropName)){
-                            scope[managerInstancePropName]  = new managerClass(this,decoratorName,finalOptions)
-                        } 
-                        return scope[managerInstancePropName]                        
+                        return async function(this:any){
+                            let scope =  finalOptions.scope == 'class' ? this.constructor : this
+                            if(!hasOwnProperty(scope,managerInstancePropName)){
+                                scope[managerInstancePropName]  = new managerClass(decoratorName,finalOptions)
+                                scope[managerInstancePropName].register(this)
+                            } 
+                            return scope[managerInstancePropName]   
+                        }
+                                             
                     }
                 }
             ) 
         }
-    }
-    
+    }    
  }

@@ -25,6 +25,9 @@ export function hasOwnProperty(instance: any, propertyName: string) :boolean{
     return getPropertyNames(instance).includes(propertyName);
 }
 
+export function isFunction(obj: any):boolean {
+    return typeof(obj)=='function'
+}
 /**
  * 提供对象中的指定健值
  * @param obj 
@@ -103,4 +106,12 @@ export function applyParams(fn:AsyncFunction,...params:any[]):AsyncFunction{
     return async function (this:any){
         return await fn.call(this,...params)
     }
+}
+
+/**
+ * 首字符大写
+ * @param str 
+ */
+export function firstUpperCase(str:String):string{
+    return str[0].toUpperCase()+str.substring(1)
 }

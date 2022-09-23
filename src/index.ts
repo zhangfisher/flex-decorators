@@ -1,4 +1,4 @@
-export * from "./methods"
+export * from "./decorator"
 export * from "./manager"
 // 内置装饰器
 export * from "./decorators/timeout"

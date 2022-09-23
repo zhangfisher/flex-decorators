@@ -1,6 +1,6 @@
 
-import { createDecorator } from "../methods"
-import type {DecoratorOptions} from "../methods"
+import { createDecorator } from "../decorator"
+import type {DecoratorOptions} from "../decorator"
 import retryWrapper from "../wrappers/retry"
  
 export interface RetryOptions extends DecoratorOptions {

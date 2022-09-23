@@ -7,7 +7,7 @@
 
 
         {
-            "name": "Demo",
+            "name": "Run",
             "type": "node",
             "request": "launch",
             "args": [

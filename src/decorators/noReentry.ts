@@ -1,5 +1,5 @@
-import { createDecorator } from "../methods"
-import type {DecoratorOptions} from "../methods"
+import { createDecorator } from "../decorator"
+import type {DecoratorOptions} from "../decorator"
 import noReentryWrapper from "../wrappers/noReentry"
  
 export interface NoReentryOptions extends DecoratorOptions { 

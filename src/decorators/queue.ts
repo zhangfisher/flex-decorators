@@ -4,8 +4,8 @@
  
 
  */
-import { createDecorator } from "../methods"
-import type {DecoratorOptions} from "../methods"
+import { createDecorator } from "../decorator"
+import type {DecoratorOptions} from "../decorator"
 import type {AsyncFunction } from "../types"
 import {DecoratorManager, createManagerDecorator,DecoratorManagerOptions } from "../manager"
 

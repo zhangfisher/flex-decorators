@@ -4,31 +4,31 @@
  
 
  */
- import { createDecorator } from "../methods"
- import type {DecoratorOptions} from "../methods"
+ import { createDecorator } from "../decorator"
+ import type {DecoratorOptions} from "../decorator"
  import type {AsyncFunction } from "../types"
  import {DecoratorManager, createManagerDecorator,DecoratorManagerOptions } from "../manager"
  
  export interface CacheOptions extends DecoratorOptions {
-    enable?: boolean
-    ttl?  : number                    // 队列大小
-    default?: any                       // 如果提供则返回该默认值而不是触发错误
+    expires?  : number                  // 过期时间，,以ms为单位，过期缓存失效
+    // 缓存键，支持插值变量,{method}=方法名称,{args}=参数hash值，或者取第n个参数{1},{2},...,{3},
+    // 如果参数是一个且是一个object,也支持{#xxx}代表arguments[0].xxx
+    key?:string | 'auto'
  }
- export interface IGetCacheDecoratorOptions {
+export interface IGetCacheDecoratorOptions {
      getCacheDecoratorOptions(options:CacheOptions,methodName:string | symbol,decoratorName:string):CacheOptions
- }
+}
  
- export const cache = createDecorator<CacheOptions>("cache",
+export const cache = createDecorator<CacheOptions>("cache",
      {
-         ttl:0,      
+         expires:0,                     // 生存期,以ms为单位，当超过时间后指点
          enable:true,                      
-         default:null
+         key:'auto'
      },{
          wrapper: function(method:Function,options:CacheOptions,manager:DecoratorManager):Function{
              return function(){
                 return method
-             }
-             
+             }             
          },
          proxyOptions:true,
          defaultOptionKey:"size"
