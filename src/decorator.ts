@@ -250,7 +250,7 @@ function useCommonDecoratorWrapper<T extends DecoratorOptions,M>(context:Record<
 
             // 读取装饰器参数                        
             let finalOptions = getOptions ? await getOptions.call(this,this) : options
-            let manager:DecoratorManager | undefined  
+            let manager:DecoratorManager | undefined 
             // 启动装饰器管理器
             try{
                 manager = await getDecoratorManager.call(this,context)

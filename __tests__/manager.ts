@@ -22,10 +22,14 @@ const cache = createDecorator<CacehOptions>("cache",{
     ttl:0,
     key:"a"
 },{
-    wrapper:function(method:Function,options:CacehOptions,manager:CacheManager):Function {
+    wrapper:function(method:Function,options:CacehOptions,manager?:DecoratorManager):Function {
         return function(this:any){
             let key= String(options.key || options.id)
-            return manager.get(key,method.apply(this,arguments))
+            if(manager){
+                return (manager as CacheManager).get(key,method.apply(this,arguments))
+            }else{
+                return method.apply(this,arguments)
+            }            
         }
     },
     manager:CacheManager
