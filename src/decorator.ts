@@ -105,8 +105,8 @@ export type DecoratorMethodWrapperOptions<T> =T extends (GetDecoratorOptions<T>)
 // }
 
 export type DecoratorMethodWrapper<T,M> = (
-    (method:M ,options:T,manager:any)=>M )
-    | ((method:M , options:any, target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<M>)=>M 
+    (method:M ,options:T,manager?:DecoratorManager | undefined)=>M )
+    | ((method:M , options:any,manager:DecoratorManager | undefined, target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<M>)=>M 
 )
 
 
@@ -250,7 +250,7 @@ function useCommonDecoratorWrapper<T extends DecoratorOptions,M>(context:Record<
 
             // 读取装饰器参数                        
             let finalOptions = getOptions ? await getOptions.call(this,this) : options
-            let manager:DecoratorManager
+            let manager:DecoratorManager | undefined  
             // 启动装饰器管理器
             try{
                 manager = await getDecoratorManager.call(this,context)
@@ -276,7 +276,7 @@ function useCommonDecoratorWrapper<T extends DecoratorOptions,M>(context:Record<
             // 包装被装饰函数
             if(!wrappedMethod || needReWrapper) {  
                 if(needReWrapper || !oldOptions)  oldOptions = pick<T>(options,Object.keys(defaultOptions as any))
-                wrappedMethod =  <M>createOptions.wrapper(oldMethod as M,options,target,propertyKey,descriptor)                        
+                wrappedMethod =  <M>createOptions.wrapper(oldMethod as M,options,manager,target,propertyKey,descriptor)                        
             }
             return (wrappedMethod as Function).apply(this,arguments)
         }else{

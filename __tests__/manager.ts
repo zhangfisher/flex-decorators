@@ -1,18 +1,46 @@
 import {  
-    cache,cacheManager,CacheOptions
+    createDecorator
 } from "../src/index" 
-
-async function delay(ms:number=10){
-    return new Promise(resolve =>setTimeout(resolve,ms))
+import { delay } from "../src/utils"
+import { DecoratorOptions } from '../src/decorator';
+import { DecoratorManager } from '../src/manager';
+ 
+interface CacehOptions extends DecoratorOptions{
+    ttl:number
+    key:string
 }
 
-test("Cache装饰器",(done)=>{
+class CacheManager extends DecoratorManager{
+    set(key:string,value:any){
+    }
+    get(key:string,defaultValue:any):any{
+        return defaultValue
+    }
+}
+
+const cache = createDecorator<CacehOptions>("cache",{
+    ttl:0,
+    key:"a"
+},{
+    wrapper:function(method:Function,options:CacehOptions,manager:CacheManager):Function {
+        return function(this:any){
+            let key= String(options.key || options.id)
+            return manager.get(key,method.apply(this,arguments))
+        }
+    },
+    manager:CacheManager
+})
+
+test("Cache装饰器自动创建管理器",async ()=>{
     class A{
+        value:number = 0
         @cache()
         getData(){
-            return 1
+            return this.value
         }
     }
-
-    done()
+    let a1 = new A()
+    let value = await a1.getData()
+    a1.value = 2
+    
 })
