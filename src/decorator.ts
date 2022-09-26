@@ -240,17 +240,7 @@ async function getDecoratorManager(this:any,context:Record<string,any>):Promise<
             }
         }
         context.managerInstance = managerInstance
-        // 为当前实例自动创建一个get<装饰器名称>Manger的方法，用来获取装饰器管理器实例
-        let managerPropName = `get${firstUpperCase(decoratorName)}Manager`
-        if(!Object.hasOwnProperty(managerPropName)){
-            Object.defineProperty(this,managerPropName,{
-                
-            })
-        }
     }
-
-
-
     // 如果没有提供有效的options.manager参数，则可能返回空的管理器
     return managerInstance
 }
@@ -356,12 +346,43 @@ function defineDecoratorMetadata<T>(context:Record<string,any>,){
 
 export interface DecoratorManagerOptions{
     enable:boolean                                  // 是否启用/禁用装饰器
-    scope?: 'class' | 'instance'                    // 管理器作用域
+    scope?: 'class' | 'instance' | 'global'         // 管理器作用域
 }
 
 
 type Constructor = { new (...args: any[]): any };
 type TypedClassDecorator<T> = <T extends Constructor>(target: T) => T | void;
+
+
+/**
+ * 在指定的类上面定义一个`${firstUpperCase(decoratorName)}Manager`的属性用来访问管理器装饰器
+
+   T: 管理器类
+   O: 管理器装饰器的参数
+ * 
+ * @param context 
+ * @param targetClass 
+ * @param decoratorName 
+ * @param managerClass 管理器类对象
+ * @param options      管理器装饰器的参数
+ */
+function defineDecoratorManagerProperty<T extends Constructor,O extends DecoratorManagerOptions>(context:Record<string,any>,targetClass:T,decoratorName:string,managerClass :typeof DecoratorManager,options:O){
+    const managerPropName = `${firstUpperCase(decoratorName)}Manager`
+    const managerInstancePropName = `__${decoratorName}ManagerInstance__`
+    Object.defineProperty(targetClass.prototype,managerPropName,
+        {
+            get: function() { 
+                const scope =  options.scope == 'class' ? this.constructor : (options.scope == 'instance' ?  this : context)
+                if(!hasOwnProperty(scope,managerInstancePropName)){
+                    scope[managerInstancePropName]  = new managerClass(decoratorName,options)
+                    scope[managerInstancePropName].register(this)
+                } 
+                return scope[managerInstancePropName]    
+            }
+        }
+    )     
+}
+
 
 /**
  * 
@@ -385,27 +406,14 @@ function createManagerDecorator<T extends DecoratorManager,O extends DecoratorMa
     return (options?: O):TypedClassDecorator<T>=>{
         let finalOptions = Object.assign({scope:"instance",enable:true},defaultOptions,options)
         return function<T extends Constructor>(this:any,targetClass: T){  
-            let managerPropName = `${firstUpperCase(decoratorName)}Manager`
-            let managerInstancePropName = `__${decoratorName}ManagerInstance__`
-            Object.defineProperty(targetClass.prototype,managerPropName,
-                {
-                    get: function() { 
-                        return async function(this:any){
-                            let scope =  finalOptions.scope == 'class' ? this.constructor : (finalOptions.scope == 'instance' ?  this : null)
-                            if(scope == null){
-                                return context.managerInstance
-                            }else{
-                                if(!hasOwnProperty(scope,managerInstancePropName)){
-                                    scope[managerInstancePropName]  = new managerClass(decoratorName,finalOptions)
-                                    scope[managerInstancePropName].register(this)
-                                } 
-                                return scope[managerInstancePropName]   
-                            }
-                        }
-                                             
-                    }
-                }
-            ) 
+            // 在目标类上定义一个`${decoratorName}Manager的属性
+            defineDecoratorManagerProperty<T,O>(
+                context,
+                targetClass,                
+                decoratorName,
+                managerClass,
+                finalOptions
+            )
         }
     }    
  }
@@ -459,9 +467,9 @@ export function createDecorator<T extends DecoratorOptions,M=any,D=any>(decorato
         }; 
         
         // 创建装饰器管理器
-        decorator.createManager = function<T extends DecoratorManager,O extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:O){
+        decorator.createManagerDecorator = function<T extends DecoratorManager,O extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:O){
             return createManagerDecorator(context,decoratorName,managerClass,defaultOptions)
-        }
+        }      
 
         
         return decorator

@@ -19,7 +19,7 @@ export async function delay(ms:number=0) {
     } while (obj);
     // get unique property names
     return Array.from(new Set<string>(propertyNames));
-}
+} 
 
 export function hasOwnProperty(instance: any, propertyName: string) :boolean{
     return getPropertyNames(instance).includes(propertyName);
