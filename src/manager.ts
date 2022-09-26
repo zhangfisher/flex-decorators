@@ -2,7 +2,7 @@
  * 装饰器管理器
  */
 
-import { getDecorators } from "./decorator";
+import { getDecorators, createDecorator } from './decorator';
 import { hasOwnProperty,firstUpperCase } from "./utils";
 import { asyncSignal, IAsyncSignal } from "./asyncSignal"
 import { AllowNull } from "./types";
@@ -81,6 +81,8 @@ export class DecoratorManager implements IDecoratorManager{
         }catch(e:any){
             this.#status = DecoratorManagerStatus.ERROR;
             if(this.#runningSignal) this.#runningSignal.reject(e)
+        }finally{
+            this.#runningSignal = null
         }        
     }
     /**
@@ -112,45 +114,10 @@ export interface DecoratorManagerOptions{
 type Constructor = { new (...args: any[]): any };
 type TypedClassDecorator<T> = <T extends Constructor>(target: T) => T | void;
 
+
 /**
- * 
- * 创建管理器装饰器
- * 
- *  该装饰器会在被装饰的类原型上生成一个${decoratorName}Manager的属性用来获取管理器实例
- *  通过该属性可以读取到当前类指定装饰器的所有信息
- * 
- * 管理器实例会自动创建保存在实例或者类静态变量上__${decoratorName}ManagerInstance__
- * 
- * 
- * 
- *  @cacheScope({
- *      enable:<true/false>                  // 是否启用/禁用装饰器功能,只会调用原始方法而不会调用装饰器提供的功能
- *      scope:"class"
- * })
- *  T: 管理器类
- *  O: 管理器类配置参数类型
+ * 创建装饰器管理器访问代理
  */
- export function createManagerDecorator<T extends DecoratorManager,O extends DecoratorManagerOptions>(decoratorName:string,managerClass :typeof DecoratorManager,  defaultOptions?:O){
-    return (options?: O):TypedClassDecorator<T>=>{
-        let finalOptions = Object.assign({scope:"instance",enable:true},defaultOptions,options)
-        return function<T extends Constructor>(this:any,targetClass: T){  
-            let managerPropName = `get${firstUpperCase(decoratorName)}Manager`
-            let managerInstancePropName = `__${decoratorName}ManagerInstance__`
-            Object.defineProperty(targetClass.prototype,managerPropName,
-                {
-                    get: function() { 
-                        return async function(this:any){
-                            let scope =  finalOptions.scope == 'class' ? this.constructor : this
-                            if(!hasOwnProperty(scope,managerInstancePropName)){
-                                scope[managerInstancePropName]  = new managerClass(decoratorName,finalOptions)
-                                scope[managerInstancePropName].register(this)
-                            } 
-                            return scope[managerInstancePropName]   
-                        }
-                                             
-                    }
-                }
-            ) 
-        }
-    }    
- }
+function createDecoratorManagerProxy(){
+
+}

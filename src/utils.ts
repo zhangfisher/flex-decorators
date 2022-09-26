@@ -28,6 +28,20 @@ export function hasOwnProperty(instance: any, propertyName: string) :boolean{
 export function isFunction(obj: any):boolean {
     return typeof(obj)=='function'
 }
+
+export function isClass(cls: any):boolean {
+    let result = false
+    if (typeof(cls) === 'function' && cls.prototype) {
+        try {
+            cls.arguments && cls.caller;
+        } catch(e) {
+            result=true
+        }
+    }
+    return result;
+}
+
+
 /**
  * 提供对象中的指定健值
  * @param obj 

@@ -37,7 +37,7 @@
     reject(e?:Error | string):void
     resolve(result?: any):void
     destroy():void
-    isFulfilled():boolean
+    isResolved():boolean
     isRejected():boolean
     isPending():boolean
  }
@@ -62,7 +62,7 @@ let AsyncSignalId = 0
  */
 
 export function asyncSignal(constraint?:Function,options:{timeout:number}={timeout:0}) : IAsyncSignal {     
-     let isFulfilled:boolean = false,isRejected:boolean = false,isPending:boolean = false
+     let isResolved:boolean = false,isRejected:boolean = false,isPending:boolean = false
      let resolveSignal:Function, rejectSignal:Function, timeoutId:number = 0
      let objPromise:Promise<any> | null
      let signalId = ++AsyncSignalId
@@ -70,7 +70,7 @@ export function asyncSignal(constraint?:Function,options:{timeout:number}={timeo
      // 重置信号，可以再次复用
      const reset = function () {
          clearTimeout(timeoutId)
-         isFulfilled = false
+         isResolved = false
          isRejected = false
          isPending = false
          objPromise = new Promise((resolve, reject) => {
@@ -84,18 +84,18 @@ export function asyncSignal(constraint?:Function,options:{timeout:number}={timeo
     async function signal(timeout:number =0 , returns?:any){
          // 如果constraint返回的true，代表不需要等待
          if (typeof (constraint) === "function" && constraint()) {
-             isFulfilled = true
+             isResolved = true
              return
          }
 
          // 如果信号上次已经完成了，则需要重置信号
-         if (isFulfilled || isRejected) reset()
+         if (isResolved || isRejected) reset()
  
          // 指定超时功能
          if (timeout > 0) {
              // 超时不受约束条件的控制
              timeoutId = setTimeout(() => {
-                 isFulfilled = true
+                 isResolved = true
                  try {
                      if (returns instanceof Error) {
                          rejectSignal(returns)
@@ -113,7 +113,7 @@ export function asyncSignal(constraint?:Function,options:{timeout:number}={timeo
      signal.resolve = (result?:any) => {        
          clearTimeout(timeoutId)
          if(!isPending) return 
-         if (isFulfilled || isRejected) return
+         if (isResolved || isRejected) return
          // 注意：是否真正resolve还受约束条件的约束，只有满足约束条件时才会真正resolve
          if (typeof (constraint) === "function" && constraint()) {
              if(constraint()){
@@ -125,13 +125,13 @@ export function asyncSignal(constraint?:Function,options:{timeout:number}={timeo
          } else {
              resolveSignal(result)
          }
-         isFulfilled = true
+         isResolved = true
      } 
 
      signal.reject = (e?:Error | string) => {        
          clearTimeout(timeoutId)
          if(!isPending) return 
-         if (isFulfilled || isRejected) return
+         if (isResolved || isRejected) return
          rejectSignal(typeof(e)==='string' ? new Error(e) : e) 
          isRejected = true
      }
@@ -140,14 +140,14 @@ export function asyncSignal(constraint?:Function,options:{timeout:number}={timeo
      signal.destroy = () => {
         clearTimeout(timeoutId)
         if(isPending) rejectSignal(new AsyncSignalAbort())   
-        isFulfilled =false
+        isResolved =false
         isPending = false         
         isRejected =false
         objPromise = null
      }
 
      signal.reset = reset
-     signal.isFulfilled = () => isFulfilled
+     signal.isResolved = () => isResolved
      signal.isRejected = () => isRejected 
      signal.isPending = () => isPending 
      return signal as unknown as IAsyncSignal
