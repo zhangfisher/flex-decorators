@@ -418,6 +418,15 @@ function createManagerDecorator<T extends DecoratorManager,O extends DecoratorMa
     }    
  }
 
+
+/**
+ * 为类注入一个访问装饰器管理器的变量
+ */
+function createManagerInjector<T extends DecoratorManagerOptions>(options:T){
+    
+    
+}
+
 /**
  * 
  * 创建装饰器
