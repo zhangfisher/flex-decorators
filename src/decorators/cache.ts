@@ -49,14 +49,14 @@ export const cache = createDecorator<CacheOptions>("cache",
  }
  
  
- export const cacheManager = createManagerDecorator<CacheManager,CacheManagerOptions>(
-     "cache",
-     CacheManager,
-     {
-         enable:true,
-         size:10
-     }
- )
+//  export const cacheManager = createManagerDecorator<CacheManager,CacheManagerOptions>(
+//      "cache",
+//      CacheManager,
+//      {
+//          enable:true,
+//          size:10
+//      }
+//  )
  
  
  

@@ -5,7 +5,7 @@
 import { getDecorators, createDecorator } from './decorator';
 import { hasOwnProperty,firstUpperCase } from "./utils";
 import { asyncSignal, IAsyncSignal } from "./asyncSignal"
-import { AllowNull } from "./types";
+import type { AllowNull,TypedClassDecorator, Constructor} from "./types";
 
 interface DecoratorList{
     [methodName: string]: {
@@ -15,17 +15,21 @@ interface DecoratorList{
 
 type DecoratorManageMode = 'none' | 'auto' | 'manual'
 
+
 interface IDecoratorManager{
     get running(): boolean         
     onStart(...args: any[]):Awaited<Promise<any>>
     onStop(...args: any[]): Awaited<Promise<any>>
     start(timeout?:number): Awaited<Promise<any>>
+    stop(): Awaited<Promise<any>>
 }
 
 export interface DecoratorManagerOptions{
-    enable:boolean;                // 是否启用/禁用装饰器
-}
+    enable?:boolean                                     // 是否启用/禁用装饰器
+    scope?: 'class' | 'instance' | 'global'             // 管理器作用域
 
+}
+ 
 /**
  * 管理器的状态
  */
@@ -84,35 +88,31 @@ export class DecoratorManager implements IDecoratorManager{
         }finally{
             this.#runningSignal = null
         }        
-    }
+    }    
     /**
-     * 将使用装饰器的实例注册到管理器中
-     * @param instance 
-     */
-    register(instance:DecoratorManager){
-        if(!this.#instances.includes(instance)) this.#instances.push(instance)
-    }
-    /**
-     * 由子类继承用来实现具体的启动逻辑
-     * @param args 
-     */
+    * 由子类继承用来实现具体的启动逻辑
+    * @param args 
+    */
     async onStart(...args: any[]){
         //throw new Error("Method not implemented.");
     }
     async onStop(...args: any[]){
         //throw new Error("Method not implemented.");
-    } 
+    }     
+    stop() {
+        
+    }
+    /**
+     * 将使用装饰器的实例注册到管理器中
+     * @param instance 
+     */
+     register(instance:DecoratorManager){
+        if(!this.#instances.includes(instance)) this.#instances.push(instance)
+    }
 } 
 
 
-export interface DecoratorManagerOptions{
-    enable:boolean                                  // 是否启用/禁用装饰器
-    scope?: 'class' | 'instance'                    // 管理器作用域
-}
 
-
-type Constructor = { new (...args: any[]): any };
-type TypedClassDecorator<T> = <T extends Constructor>(target: T) => T | void;
 
 
 /**
@@ -120,4 +120,80 @@ type TypedClassDecorator<T> = <T extends Constructor>(target: T) => T | void;
  */
 function createDecoratorManagerProxy(){
 
+}
+
+/**
+ * 在指定的类上面定义一个`${firstUpperCase(decoratorName)}Manager`的属性用来访问管理器装饰器
+
+   T: 管理器类
+   O: 管理器装饰器的参数
+ * 
+ * @param runContexts   
+ * @param targetClass 
+ * @param decoratorName 
+ * @param managerClass 管理器类对象
+ * @param options      管理器装饰器的参数
+ */
+function defineDecoratorManagerProperty<T extends Constructor,O extends DecoratorManagerOptions>(runContexts:Record<string,any>,targetClass:T,decoratorName:string,managerClass :typeof DecoratorManager,options:O){
+    const managerPropName = `${decoratorName}Manager`
+    const managerInstancePropName = `__${decoratorName}ManagerInstance__`
+    Reflect.defineProperty(targetClass.prototype,managerPropName,
+        {
+            get: function() { 
+                const scope =  options.scope == 'class' ? this.constructor : (options.scope == 'instance' ?  this : runContexts[decoratorName])
+                if(!hasOwnProperty(scope,managerInstancePropName)){
+                    scope[managerInstancePropName]  = new managerClass(decoratorName,options)
+                    scope[managerInstancePropName].register(this)
+                } 
+                return scope[managerInstancePropName]    
+            }
+        }
+    )     
+}
+
+export interface ManagerDecoratorCreator<T extends DecoratorManager,O extends DecoratorManagerOptions>{ 
+    (options?: O):TypedClassDecorator<T>
+}
+/**
+ * 
+ * 创建管理器装饰器
+ * 
+ *  该装饰器会在被装饰的类原型上生成一个${decoratorName}Manager的属性用来获取管理器实例
+ *  通过该属性可以读取到当前类指定装饰器的所有信息
+ * 
+ * 管理器实例会自动创建保存在实例或者类静态变量上__${decoratorName}ManagerInstance__
+ * 
+ * 
+ * 
+ *  @cacheScope({
+ *      enable:<true/false>                  // 是否启用/禁用装饰器功能,只会调用原始方法而不会调用装饰器提供的功能
+ *      scope:"class"                        // 取值class,instance,global
+ * })
+ *  T: 管理器类
+ *  O: 管理器类配置参数类型
+ */
+ export function createManagerDecorator<T extends DecoratorManager,O extends DecoratorManagerOptions>(context:Record<string,any>, decoratorName:string,managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<T,O>{
+    return (options?: O):TypedClassDecorator<T>=>{
+        return function<T extends Constructor>(this:any,targetClass: T){  
+            let finalOptions = Object.assign({},defaultOptions || {},options)
+            // 在目标类上定义一个`${decoratorName}Manager的属性
+            defineDecoratorManagerProperty<T,O>(
+                context,
+                targetClass,                
+                decoratorName,
+                managerClass,
+                finalOptions
+            )
+        }
+    }    
+ }
+
+
+/**
+ * 为类注入一个访问装饰器管理器的变量
+ * 
+ */
+ function createManagerInjector<T extends DecoratorManagerOptions>(options:T){
+    
+    
 }
