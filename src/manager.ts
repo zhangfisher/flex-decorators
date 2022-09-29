@@ -2,18 +2,103 @@
  * 装饰器管理器
  */
 
-import { getDecorators, createDecorator } from './decorator';
-import { hasOwnProperty,firstUpperCase } from "./utils";
+import { hasOwnProperty,getPropertyNames } from "./utils";
 import { asyncSignal, IAsyncSignal } from "./asyncSignal"
-import type { AllowNull,TypedClassDecorator, Constructor} from "./types";
+import type { AllowNull,TypedClassDecorator, Constructor} from "./types"; 
 
-interface DecoratorList{
-    [methodName: string]: {
-        
-    }[]
+/**
+ * getDecorators返回的当前实例的装饰器信息
+ * {[装饰器名称]:{
+ *      [方法名称]:[<装饰器参数>,<装饰器参数>,<装饰器参数代理>]
+ * }}
+ */
+export type DecoratorList = {
+    [decoratorName:string]:{[methodName:string]:any[]} 
+} 
+
+export type DecoratedMethodList = {
+    [methodName:string]:object[]
 }
 
-type DecoratorManageMode = 'none' | 'auto' | 'manual'
+
+const excludedPropertyNames = [
+    "constructor","hasOwnProperty","isPrototypeOf","propertyIsEnumerable","prototype",
+    "toString","valueOf","toLocaleString","length"
+]
+
+/**
+ * 获取指定装饰器的方法
+ * 
+ * getDecorators(<实例>,"装饰器名称")
+ * 
+ * @param decoratorName   装饰器名称 
+ * @returns {DecoratorList}    {[装饰器名称]:{[方法名称]:[{[装饰器参数],[装饰器参数],...}]}}
+ */
+export function getDecorators(instance: any,decoratorName?:string,options?:{cache?:boolean}):DecoratorList | DecoratedMethodList{
+    let opts = Object.assign({
+        cache: true,
+    },options)
+    // 返回缓存中的数据
+    let cache = instance.constructor.__DECORATORS__
+    if(opts?.cache==undefined && cache){
+        if(decoratorName && decoratorName in cache){
+            return cache[decoratorName]
+        }else{
+            return cache as DecoratorList
+        }        
+    }
+    let metadatas:DecoratorList = {} ;
+    if(decoratorName){
+        metadatas = metadatas as DecoratorList
+    }else{
+        metadatas = metadatas as DecoratorList
+    }
+
+    let propertyNames = getPropertyNames(instance)
+    propertyNames.forEach(propertyName =>{
+        if(excludedPropertyNames.includes(propertyName) || propertyName.startsWith("__"))  return
+        if(decoratorName){
+            if(!metadatas[decoratorName]) metadatas[decoratorName]={}
+            let metadata =  Reflect.getMetadata(`decorator:${decoratorName}`,instance,propertyName)
+            if(metadata && metadata.length>0){
+                if(!(propertyName in metadatas[decoratorName])) (metadatas[decoratorName] as DecoratedMethodList)[propertyName]=[];
+                (metadatas[decoratorName] as DecoratedMethodList)[propertyName].push(...metadata)
+            }            
+        }else{
+            let keys = Reflect.getMetadataKeys(instance,propertyName)
+            keys.forEach(key=>{
+                if(key.startsWith("decorator:")){
+                    const decoratorName = key.split(":")[1]
+                    if(!metadatas[decoratorName]) metadatas[decoratorName]={}
+                    let metadata = Reflect.getMetadata(key,instance,propertyName)
+                    if(metadata && metadata.length>0){
+                        if(!(propertyName in metadatas[decoratorName])) metadatas[decoratorName][propertyName]=[]
+                        metadatas[decoratorName][propertyName].push(...metadata)
+                    }
+                }
+            })
+        }
+ 
+    })    
+
+    // 如果元数据是一个用来生成代理对象的函数则执行
+    Object.values(metadatas).forEach((methodMetadatas:any) =>{
+        Object.entries(methodMetadatas).forEach(([methodName,metadata])=>{
+            methodMetadatas[methodName]=(metadata as []).map((opts)=>{
+                if(typeof opts == "function"){
+                    return (opts as Function).call(instance,instance)
+                }else{
+                    return opts
+                }
+            })            
+        })
+    })
+    if(opts?.cache){
+        instance.constructor.__DECORATORS__ = metadatas
+    }
+
+    return decoratorName ? metadatas[decoratorName] : metadatas
+} 
 
 
 interface IDecoratorManager{
@@ -27,7 +112,6 @@ interface IDecoratorManager{
 export interface DecoratorManagerOptions{
     enable?:boolean                                     // 是否启用/禁用装饰器
     scope?: 'class' | 'instance' | 'global'             // 管理器作用域
-
 }
  
 /**
@@ -109,18 +193,20 @@ export class DecoratorManager implements IDecoratorManager{
      register(instance:DecoratorManager){
         if(!this.#instances.includes(instance)) this.#instances.push(instance)
     }
+    /**
+     * 获取被装饰的方法列表
+     */
+    getMethods(instance?:object):DecoratorList | DecoratedMethodList{
+        if(this.#instances.length==1){
+            return getDecorators(this.#instances[0],this.#decoratorName) as DecoratedMethodList
+        }else if(instance) {
+            return getDecorators(instance,this.#decoratorName) as DecoratorList
+        }else{
+            return {}
+        }
+    }
 } 
 
-
-
-
-
-/**
- * 创建装饰器管理器访问代理
- */
-function createDecoratorManagerProxy(){
-
-}
 
 /**
  * 在指定的类上面定义一个`${firstUpperCase(decoratorName)}Manager`的属性用来访问管理器装饰器
@@ -136,11 +222,11 @@ function createDecoratorManagerProxy(){
  */
 function defineDecoratorManagerProperty<T extends Constructor,O extends DecoratorManagerOptions>(runContexts:Record<string,any>,targetClass:T,decoratorName:string,managerClass :typeof DecoratorManager,options:O){
     const managerPropName = `${decoratorName}Manager`
-    const managerInstancePropName = `__${decoratorName}ManagerInstance__`
+    const managerInstancePropName = `__${decoratorName}Manager__`
     Reflect.defineProperty(targetClass.prototype,managerPropName,
         {
             get: function() { 
-                const scope =  options.scope == 'class' ? this.constructor : (options.scope == 'instance' ?  this : runContexts[decoratorName])
+                const scope =  options.scope == 'class' ? this.constructor : (options.scope == 'instance' ?  this : runContexts)
                 if(!hasOwnProperty(scope,managerInstancePropName)){
                     scope[managerInstancePropName]  = new managerClass(decoratorName,options)
                     scope[managerInstancePropName].register(this)
@@ -186,11 +272,16 @@ export interface ManagerDecoratorCreator<T extends DecoratorManager,O extends De
             )
         }
     }    
- }
+}
 
 
 /**
  * 为类注入一个访问装饰器管理器的变量
+ * 
+ * class MyClass{
+ *  @cacheManager()
+ *  manager:CacheManager 
+ * }
  * 
  */
  function createManagerInjector<T extends DecoratorManagerOptions>(options:T){

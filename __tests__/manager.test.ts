@@ -16,7 +16,13 @@ interface CacheManagerOptions extends DecoratorManagerOptions{
 }
 
 class CacheManager extends DecoratorManager{
+    static seq :number = 0;
+    id:number = 0
     #values:Record<string,any> ={}
+    constructor(decoratorName:string,options:Record<string,any>){
+        super(decoratorName,options)
+        this.id = ++CacheManager.seq
+    }
     set(key:string,value:any,ttl:number=0){
         this.#values[key] = [value,ttl,Date.now()]
     }
@@ -170,7 +176,7 @@ test("所有实例均共享一个全局Cache装饰器管理器",async ()=>{
 
 test("实例作用域Cache装饰器管理器",async ()=>{
     @cacheScope({
-        scope:"instance1"
+        scope:"instance"
     })       // 没有参数时为全局管理器
     class A{
         value:number = 0
@@ -190,6 +196,132 @@ test("实例作用域Cache装饰器管理器",async ()=>{
     let cacheManager1:CacheManager = (a1 as any).cacheManager
     let cacheManager2:CacheManager = (a2 as any).cacheManager
     let cacheManager3:CacheManager = (a3 as any).cacheManager    
+    
+    expect(cacheManager1.running).toBe(false)
+    expect(cacheManager2.running).toBe(false)
+    expect(cacheManager3.running).toBe(false)
+
+    expect(cacheManager1).not.toBe(cacheManager2)
+    expect(cacheManager1).not.toBe(cacheManager3)    
+    
+})
+
+test("实例作用域Cache装饰器管理器获取被装饰的方法",async ()=>{
+    @cacheScope({
+        scope:"instance"
+    })       // 没有参数时为全局管理器
+    class A{
+        @cache()
+        getData(){ }
+        @cache()
+        async getUsers(){}
+        getCacheManager(){
+            return (this as any).cacheManager
+        }
+    }
+    @cacheScope({
+        scope:"instance"
+    }) 
+    class B{
+        @cache()
+        getDataB(){ }
+        @cache()
+        async getUsersB(){}        
+        getCacheManager(){
+            return (this as any).cacheManager
+        }
+    }
+    let a1 = new A()
+    let b1 = new B()
+    let aCacheManager:CacheManager = a1.getCacheManager()
+    let bCacheManager:CacheManager = b1.getCacheManager()
+    expect(Object.keys(aCacheManager.getMethods()  )).toStrictEqual(["getData", "getUsers"])
+    expect(Object.keys(bCacheManager.getMethods()  )).toStrictEqual(["getDataB", "getUsersB"])
+})
+
+
+test("类作用域Cache装饰器管理器",async ()=>{
+    @cacheScope({
+        scope:"class"
+    })       // 没有参数时为全局管理器
+    class A{
+        value:number = 0
+        users:string[] = []
+        @cache()
+        getData(){
+            return this.value
+        }
+        @cache()
+        async getUsers(){
+            return this.users
+        }
+    }
+    let a1 = new A()
+    let a2 = new A()
+    let a3 = new A()
+    let cacheManager1:CacheManager = (a1 as any).cacheManager
+    let cacheManager2:CacheManager = (a2 as any).cacheManager
+    let cacheManager3:CacheManager = (a3 as any).cacheManager    
+    
+    expect(cacheManager1.running).toBe(false)
+    expect(cacheManager2.running).toBe(false)
+    expect(cacheManager3.running).toBe(false)
+
     expect(cacheManager1).toBe(cacheManager2)
     expect(cacheManager1).toBe(cacheManager3)    
+
+    await cacheManager1.start()
+
+    expect(cacheManager1.running).toBe(true)
+    expect(cacheManager2.running).toBe(true)
+    expect(cacheManager3.running).toBe(true)
+
+    
+})
+test("类作用域Cache装饰器管理器获取被装饰的方法",async ()=>{
+    @cacheScope({
+        scope:"class"
+    })       // 没有参数时为全局管理器
+    class A{
+        @cache()
+        getData(){ }
+        @cache()
+        async getUsers(){}
+        getCacheManager(){
+            return (this as any).cacheManager
+        }
+    }
+    @cacheScope({
+        scope:"class"
+    }) 
+    class B{
+        @cache()
+        getDataB(){ }
+        @cache()
+        async getUsersB(){}        
+        getCacheManager(){
+            return (this as any).cacheManager
+        }
+    }
+    let a1 = new A()
+    let b1 = new B()
+    let aCacheManager:CacheManager = a1.getCacheManager()
+    let bCacheManager:CacheManager = b1.getCacheManager()
+    expect(Object.keys(aCacheManager.getMethods(a1))).toStrictEqual(["getData", "getUsers"])
+    expect(Object.keys(bCacheManager.getMethods(b1))).toStrictEqual(["getDataB", "getUsersB"])
+})
+
+test("获取全局管理器",async ()=>{   // 没有参数时为全局管理器
+    class A{
+        @cache()
+        getData(){ }
+        @cache()
+        async getUsers(){}
+        getCacheManager(){
+            return (this as any).cacheManager
+        }
+    }
+    let a1 = new A()    
+    let manager = cache.getManager()
+    expect(manager).toBeInstanceOf(DecoratorManager)
 })
