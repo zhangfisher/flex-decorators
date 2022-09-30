@@ -1,6 +1,6 @@
+import { beforeEach,expect, test,vi } from 'vitest'
 import {  
-    createDecorator,
-    createManagerDecorator
+    createDecorator    
 } from "../src/index" 
 import { delay } from "../src/utils"
 import { DecoratorOptions } from '../src/decorator';
@@ -69,6 +69,11 @@ const cacheScope = cache.createManagerDecorator<CacheManager,CacheManagerOptions
     ttl:10
 })
 
+
+beforeEach(async () => {
+    await cache.destroyManager()
+})
+
 interface ICacheManager{
     getCacheManager():CacheManager
 }
@@ -132,8 +137,8 @@ test("手动启动Cache装饰器全局管理器",async ()=>{
             return this.users
         }
     }
-    let onStart = jest.fn()
-    let onStop = jest.fn()
+    let onStart = vi.fn()
+    let onStop = vi.fn()
     let a1 = new A()
     let cacheManager:CacheManager = (a1 as any).cacheManager
     cacheManager.onStart = onStart.bind(cacheManager)

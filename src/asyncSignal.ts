@@ -228,31 +228,3 @@ export function asyncSignal(constraint?:Function,options:{timeout:number}={timeo
  } 
 
  
-// export async function delay(ms:number=0) {
-//     if(ms<=0) return 
-//     return new Promise(resolve=>setTimeout(resolve,ms))
-// }
-
-
-//  let s1 = asyncSignal();
-//  let s2 = asyncSignal();
-
-
-// async function test(name:string,s:Function){
-//     let t1 = Date.now()
-//     await s()
-//     console.log(name,":",Date.now()-t1)
-// }
-
-// test("s1",s1).then(()=>{
-
-// })
-// test("s2",s2).then(()=>{
-
-// })
-// setTimeout(()=>{
-//     s1.resolve()
-// },1000)
-// setTimeout(()=>{
-//     s2.resolve()
-// },2000)

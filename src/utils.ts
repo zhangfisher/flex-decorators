@@ -71,6 +71,7 @@ export function isDiff(baseObj:Record<string,any> | [], refObj:Record<string,any
         for(let i:number = 0; i < baseObj.length;i++){
             let v1 = baseObj[i], v2 = refObj[i]                
             if(typeof(v1)!=typeof(v2)) return true   // 类型不同
+            if(v1 == null && v2 == null)  continue
             if(Array.isArray(v1) && Array.isArray(v2)){
                 if(isDiff(v1,v2,true)) return true    
             }else if(typeof(v1)=="object" && typeof(v2)=="object"){
@@ -87,6 +88,7 @@ export function isDiff(baseObj:Record<string,any> | [], refObj:Record<string,any
         }
         for(let [key,value] of Object.entries(baseObj)){
             const v1 = value,v2 = (refObj as Record<string,any>) [key]
+            if(v1 == null && v2 == null)  continue
             if(!(key in refObj)) return true
             if(typeof(v1) != typeof(v2)) return true        
             if(Array.isArray(v1) && Array.isArray(v2)){
@@ -101,6 +103,12 @@ export function isDiff(baseObj:Record<string,any> | [], refObj:Record<string,any
     return false
 }
 
+
+export function isAsyncFunction(fn:any):boolean{
+    if(!fn || typeof fn!="function") return false
+    return Object.prototype.toString.call(fn) === '[object AsyncFunction]'
+            || fn.constructor.name === 'AsyncFunction'
+}
 
 /**
  *

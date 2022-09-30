@@ -9,7 +9,7 @@ export interface TimeoutOptions extends DecoratorOptions {
     default?: any                       // 如果提供则返回该默认值而不是触发错误
 }
 export interface IGetTimeoutDecoratorOptions {
-    getTimeoutDecoratorOptions(options:TimeoutOptions,methodName:string | symbol,decoratorName:string):TimeoutOptions
+    getTimeoutDecoratorOptions:((options:TimeoutOptions,methodName:string | symbol,decoratorName:string)=>TimeoutOptions) | ((options:TimeoutOptions,methodName:string | symbol,decoratorName:string)=>Promise<TimeoutOptions>)
 }
 
 export const timeout = createDecorator<TimeoutOptions,AsyncFunction,number>("timeout",

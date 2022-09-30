@@ -214,19 +214,20 @@ export class DecoratorManager implements IDecoratorManager{
    T: 管理器类
    O: 管理器装饰器的参数
  * 
- * @param runContexts   
+ * @param decoratorContext   
  * @param targetClass 
  * @param decoratorName 
  * @param managerClass 管理器类对象
  * @param options      管理器装饰器的参数
  */
-function defineDecoratorManagerProperty<T extends Constructor,O extends DecoratorManagerOptions>(runContexts:Record<string,any>,targetClass:T,decoratorName:string,managerClass :typeof DecoratorManager,options:O){
+function defineDecoratorManagerProperty<T extends Constructor,O extends DecoratorManagerOptions>(decoratorContext:Record<string,any>,targetClass:T,managerClass :typeof DecoratorManager,options:O){
+    const { decoratorName }= decoratorContext
     const managerPropName = `${decoratorName}Manager`
     const managerInstancePropName = `__${decoratorName}Manager__`
     Reflect.defineProperty(targetClass.prototype,managerPropName,
         {
             get: function() { 
-                const scope =  options.scope == 'class' ? this.constructor : (options.scope == 'instance' ?  this : runContexts)
+                const scope =  options.scope == 'class' ? this.constructor : (options.scope == 'instance' ?  this : decoratorContext)
                 if(!hasOwnProperty(scope,managerInstancePropName)){
                     scope[managerInstancePropName]  = new managerClass(decoratorName,options)
                     scope[managerInstancePropName].register(this)
@@ -258,15 +259,14 @@ export interface ManagerDecoratorCreator<T extends DecoratorManager,O extends De
  *  T: 管理器类
  *  O: 管理器类配置参数类型
  */
- export function createManagerDecorator<T extends DecoratorManager,O extends DecoratorManagerOptions>(context:Record<string,any>, decoratorName:string,managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<T,O>{
+ export function createManagerDecorator<T extends DecoratorManager,O extends DecoratorManagerOptions>(decoratorContext:Record<string,any>, managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<T,O>{
     return (options?: O):TypedClassDecorator<T>=>{
         return function<T extends Constructor>(this:any,targetClass: T){  
-            let finalOptions = Object.assign({},defaultOptions || {},options)
+            let finalOptions = Object.assign({scope:'global'},defaultOptions,options || {})
             // 在目标类上定义一个`${decoratorName}Manager的属性
             defineDecoratorManagerProperty<T,O>(
-                context,
+                decoratorContext,
                 targetClass,                
-                decoratorName,
                 managerClass,
                 finalOptions
             )

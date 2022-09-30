@@ -1,12 +1,12 @@
+import { expect, test, beforeEach } from 'vitest'
 import { 
     createDecorator,getDecorators,DecoratorOptions ,
-    timeout,TimeoutOptions,IGetTimeoutDecoratorOptions,    
+    resetMethodDecorator,
+    timeout,TimeoutOptions,IGetTimeoutDecoratorOptions,
     retry,RetryOptions,IGetRetryDecoratorOptions,
-    noReentry,
-    debounce,DebounceOptions,
-    throttle,ThrottleOptions,
-    resetMethodDecorator
+    noReentry,debounce,throttle
 } from "../src/index" 
+
 
 async function delay(ms:number=10){
     return new Promise(resolve =>setTimeout(resolve,ms))
@@ -72,7 +72,7 @@ class A implements IGetTimeoutDecoratorOptions{
     constructor(){
         this.logDecorators = getDecorators(this,"log")    
     }
-    getTimeoutDecoratorOptions(options: TimeoutOptions, methodName: string | symbol, decoratorName: string): TimeoutOptions {
+    async getTimeoutDecoratorOptions(options: TimeoutOptions, methodName: string | symbol, decoratorName: string): Promise<TimeoutOptions> {
         options.value = this.timeoutValue
         return options
     }
@@ -125,31 +125,25 @@ beforeEach(()=>{
     logs=[]
 })
 
-test("日志装饰器",(done)=>{
+test("日志装饰器",async ()=>{
     let a1 = new A()
-    a1.print("x")
+    await a1.print("x")
     expect(logs).toStrictEqual(["Before","x","After"])
     expect(Object.keys(a1.logDecorators)).toStrictEqual(["print"])
-
     let aa1 = new AA()
-    aa1.print("x")
-    expect(logs).toStrictEqual(["Before","x","After","x"])
-    
-
-
-    done()
+    await aa1.print("x")
+    expect(logs).toStrictEqual(["Before","x","After","x"])    
 })
 
-test("继承的日志装饰器",(done)=>{
+test("继承的日志装饰器",async ()=>{
     let aa1 = new AA()
-    aa1.print("x")
-    aa1.print2("x")
+    await aa1.print("x")
+    await aa1.print2("x")
     expect(Object.keys(aa1.logDecorators)).toStrictEqual(["print","print2"])
     expect(logs).toStrictEqual([
         "x",
         "AA-Before","x","AA-After"
     ])
-    done()
 })
 
 
