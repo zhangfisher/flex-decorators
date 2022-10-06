@@ -10,7 +10,7 @@ import { createDecorator } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
 import type {AsyncFunction } from "../types"
 import {DecoratorManager, createManagerDecorator,DecoratorManagerOptions } from "../manager"
-
+import { asyncSignal,IAsyncSignal } from "../asyncSignal"
 
 
 export enum QueueBufferOverflowBehaviour {
@@ -36,7 +36,8 @@ export interface IQueueDecoratorOptionsReader {
 export interface QueueTask{
     id?:number,                                
     timestamp?:number                       // 放进队列的时间
-    
+    args:any[],
+    method:AsyncFunction
 }
 
 class QueueManager extends DecoratorManager{
@@ -46,21 +47,27 @@ class QueueManager extends DecoratorManager{
 class QueueTaskExecutor{
     #tasks:QueueTask[] = []
     #isExecuting:boolean = false
+    #hasTaskSignal:IAsyncSignal = asyncSignal()
     constructor(options: QueueOptions ){
-        
+        //this.#hasTaskSignal = asyncSignal()
     }
     async start(){
         while(true){
             // 从队列中取出
-            let task = this.#tasks.pop()
-            
+            let task =await this._pop();
+            if(task.method){
+                await task.method(...task.args);
+            }
         }
     }
     /**
-     * 取出最后一个任务
+     * 取出最后一个任务，如果没有任务则等待
      */
-    _pop(){
-        this.#tasks.splice(0,1)
+    async _pop():Promise<QueueTask>{
+        if(this.#tasks.length>0){
+            this.#tasks.splice(0,1)
+        }
+        return await this.#hasTaskSignal()
     }
     async stop(){
 
@@ -69,12 +76,12 @@ class QueueTaskExecutor{
      * 添加信息
      * @param task 
      */
-    push(instance:any,args: any){
+    push(method:any,args: any){
         let task = {
             id:1,
             timestamp:Date.now(),
             args: args,
-            instance
+            method
         }
         this.#tasks.push(task)
     }
@@ -88,7 +95,7 @@ export const queue = createDecorator<QueueOptions,AsyncFunction,number>("queue",
         wrapper: function(method:AsyncFunction,options:QueueOptions):AsyncFunction{
             let queue = new QueueTaskExecutor(options)
             return async function(this:any){
-                return queue.push(this,arguments)
+                return queue.push(method.bind(this),arguments)
             }
         },
         defaultOptionKey:"size"
