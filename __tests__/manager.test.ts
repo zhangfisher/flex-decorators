@@ -19,9 +19,13 @@ class CacheManager extends DecoratorManager{
     static seq :number = 0;
     id:number = 0
     #values:Record<string,any> ={}
+    get values():Record<string,any>{return this.#values}
     constructor(decoratorName:string,options:Record<string,any>){
         super(decoratorName,options)
         this.id = ++CacheManager.seq
+    }
+    has(key:string):boolean{
+        return key in this.#values
     }
     set(key:string,value:any,ttl:number=0){
         this.#values[key] = [value,ttl,Date.now()]
@@ -44,7 +48,6 @@ class CacheManager extends DecoratorManager{
 
     }
 }
-
 //
 const cache = createDecorator<CacheOptions>("cache",{ttl:0,key:undefined},{    
     wrapper:function(method:Function,options:CacheOptions,manager?:DecoratorManager):Function {
@@ -64,11 +67,69 @@ const cache = createDecorator<CacheOptions>("cache",{ttl:0,key:undefined},{
     manager:CacheManager
 })
 
-const cacheScope = cache.createManagerDecorator<CacheManager,CacheManagerOptions>(CacheManager,{
+const cacheScope = cache.createManager<CacheManager,CacheManagerOptions>(CacheManager,{
     enable:true,
     ttl:10
 })
 
+
+class SyncCacheManager extends DecoratorManager{
+    static seq :number = 0;
+    id:number = 0
+    #values:Record<string,any> ={}
+    get values():Record<string,any>{return this.#values}
+    constructor(decoratorName:string,options:Record<string,any>){
+        super(decoratorName,options)
+        this.id = ++SyncCacheManager.seq
+    }
+    has(key:string):boolean{
+        return key in this.#values
+    }
+    set(key:string,value:any,ttl:number=0){
+        this.#values[key] = [value,ttl,Date.now()]
+    }
+    get(key:string,defaultValue?:any):any{
+        if(key in this.#values){
+            let [value,ttl,time] = this.#values[key]
+            if(ttl==0 || Date.now() - time < ttl){
+                return value
+            }else{
+                delete this.#values[key]
+            }
+        }
+        return defaultValue        
+    }
+    async onStart(){
+
+    }
+    async onStop(){
+
+    }
+}
+ 
+
+
+type cacheableMethod = (...args: any[]) => any
+const syncCache = createDecorator<
+    CacheOptions,
+    cacheableMethod
+>("syncCache",{ttl:0,key:undefined},{    
+    wrapper:function(method:Function,options:CacheOptions,manager?:DecoratorManager):cacheableMethod {
+        return function(this:any){
+            let key= String(options.key || options.id)
+            let result
+            if(manager){
+                result  =  (manager as SyncCacheManager).get(key)
+            }
+            if(result==undefined){
+                result = method.apply(this,arguments)
+                if(manager) (manager as SyncCacheManager).set(key,result)
+            }
+            return  result
+        }
+    },
+    manager:SyncCacheManager
+})
 
 beforeEach(async () => {
     await cache.destroyManager()
@@ -108,6 +169,29 @@ test("自动启动Cache装饰器全局管理器装饰",async ()=>{
         users:string[] = []
         @cache()
         getData(){
+            return this.value
+        }
+        @cache()
+        async getUsers(){
+            return this.users
+        }
+    }
+    let a1 = new A()
+    let cacheManager:CacheManager = (a1 as any).cacheManager
+    expect(cacheManager).toBeInstanceOf(CacheManager)
+    expect(cacheManager.running).toBe(false)
+    expect(a1.getData()).resolves.toBe(0)
+    await cacheManager.start()
+    expect(cacheManager.running).toBe(true)
+})
+
+test("异步自动启动Cache装饰器全局管理器装饰",async ()=>{
+    @cacheScope()       
+    class A{
+        value:number = 0
+        users:string[] = []
+        @cache()
+        async getData(){ //   异步
             return this.value
         }
         @cache()
@@ -329,4 +413,62 @@ test("获取全局管理器",async ()=>{   // 没有参数时为全局管理器
     let a1 = new A()    
     let manager = cache.getManager()
     expect(manager).toBeInstanceOf(DecoratorManager)
+})
+
+
+
+test("从实例中同步读取装饰器参数",async ()=>{
+    class A{
+        value:number = 0
+        users:string[] = []
+        getSyncCacheDecoratorOptions(options:CacheOptions,methodName:string,decoratorName: string){
+            options.key = `CACHE_${methodName.toUpperCase()}`
+            return options
+        }
+        @syncCache({})
+        getData(){
+            return this.value
+        }
+        
+        @syncCache({})
+        getData1(){
+            return this.value
+        }
+    }
+    let a1 = new A()
+    expect(a1.getData()).toBe(0)
+    expect(a1.getData1()).toBe(0)
+    let manager = syncCache.getManager() as SyncCacheManager
+    expect(manager).toBeInstanceOf(DecoratorManager)
+    expect(manager.has("CACHE_GETDATA")).toBeTruthy()    
+    expect(manager.has("CACHE_GETDATA1")).toBeTruthy()    
+    
+})
+test("从实例中异步读取装饰器参数",async ()=>{
+    class A{
+        value:number = 0
+        users:string[] = []
+        async getSyncCacheDecoratorOptions(options:CacheOptions,methodName:string,decoratorName: string){
+            options.key = `CACHE_${methodName.toUpperCase()}`
+            return options
+        }
+        @syncCache({ttl:10000})
+        getData(){
+            return new Promise((resolve, reject) =>{
+                setTimeout(() =>resolve,10)
+            })
+        }
+        
+        @syncCache({ttl:20000})
+        getData1(){
+            return this.value
+        }
+    }
+    let a1 = new A()
+    await expect(a1.getData()).resolves.toBe(0)
+    await expect(a1.getData1()).resolves.toBe(0)
+    let manager = syncCache.getManager() as SyncCacheManager
+    expect(manager).toBeInstanceOf(DecoratorManager)
+    expect(manager.has("CACHE_GETDATA")).toBeTruthy()    
+    expect(manager.has("CACHE_GETDATA1")).toBeTruthy()        
 })

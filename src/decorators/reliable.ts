@@ -12,7 +12,7 @@ export interface ReliableOptions extends DecoratorOptions {
     noReentry       : boolean,                           // 不可重入
 }
 
-export interface IGetReliableDecoratorOptions {
+export interface IReliableDecoratorOptionsReader {
     getRetryDecoratorOptions(options:ReliableOptions,methodName:string | symbol,decoratorName:string):ReliableOptions
 }
 
@@ -27,6 +27,5 @@ export const reliable = createDecorator<ReliableOptions>("reliable",
     },{
     wrapper: function(method:AsyncFunction,options:ReliableOptions):AsyncFunction{
         return reliableWrapper(method,options)
-    },
-    proxyOptions:true
+    }
 })

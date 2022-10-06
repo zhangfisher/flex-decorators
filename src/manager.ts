@@ -130,13 +130,11 @@ export enum DecoratorManagerStatus {
  * 装饰器管理器基类
  */
 export class DecoratorManager implements IDecoratorManager{    
-    #decoratorName:string = ""                                              // 装饰器名称
     #options:Record<string,any>  
     #status: DecoratorManagerStatus = DecoratorManagerStatus.INITIAL        // 状态
     #instances:any[] = []                                                   // 保存装饰实例引用 
     #runningSignal:AllowNull<IAsyncSignal>
-    constructor(decoratorName:string,options:Record<string,any>){
-        this.#decoratorName=decoratorName
+    constructor(options:Record<string,any>){
         this.#options = Object.assign({
             enable:true
         },options)
@@ -144,7 +142,6 @@ export class DecoratorManager implements IDecoratorManager{
     }    
     get enable():boolean{ return this.#options.enable  }
     set enable(value:boolean){ this.#options.enable =value }
-    get decoratorName():string { return this.#decoratorName }
     get status():DecoratorManagerStatus { return this.#status }
     get running(): boolean { return this.#status==DecoratorManagerStatus.RUNNING  } 
     
@@ -158,7 +155,7 @@ export class DecoratorManager implements IDecoratorManager{
             return await this.#runningSignal(timeout)
         }
         if(![DecoratorManagerStatus.INITIAL,DecoratorManagerStatus.ERROR].includes(this.#status)){
-            throw new Error(`Unload start <${this.#decoratorName}> decoratorManager`)
+            throw new Error(`Unload start <${this.constructor.name}> decoratorManager`)
         }
         try{
             this.#status = DecoratorManagerStatus.STARTING            

@@ -7,7 +7,7 @@ export interface DebounceOptions extends DecoratorOptions {
     interval:number, 
     atBegin?:boolean
 }
-export interface IGetDebounceDecoratorOptions {
+export interface IDebounceDecoratorOptionsReader {
     getDebounceDecoratorOptions(options:DebounceOptions,methodName:string | symbol,decoratorName:string):DebounceOptions
 }
 
@@ -15,6 +15,5 @@ export const debounce = createDecorator<DebounceOptions>("debounce",{interval:10
     wrapper: function(method:AsyncFunction,options:DebounceOptions):Function{
         return debounceWrapper(method,options)
     },
-    proxyOptions:true,
     defaultOptionKey:"interval"
 })

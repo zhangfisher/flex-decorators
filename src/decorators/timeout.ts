@@ -8,7 +8,7 @@ export interface TimeoutOptions extends DecoratorOptions {
     value?  : number,                   // 超时时间
     default?: any                       // 如果提供则返回该默认值而不是触发错误
 }
-export interface IGetTimeoutDecoratorOptions {
+export interface ITimeoutDecoratorOptionsReader {
     getTimeoutDecoratorOptions:((options:TimeoutOptions,methodName:string | symbol,decoratorName:string)=>TimeoutOptions) | ((options:TimeoutOptions,methodName:string | symbol,decoratorName:string)=>Promise<TimeoutOptions>)
 }
 
@@ -20,6 +20,5 @@ export const timeout = createDecorator<TimeoutOptions,AsyncFunction,number>("tim
         wrapper: function(method:AsyncFunction,options:TimeoutOptions):AsyncFunction{
             return timeoutWrapper(method,options)
         },
-        proxyOptions:true,
         defaultOptionKey:"value"
     })

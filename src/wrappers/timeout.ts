@@ -14,7 +14,7 @@ import type { AsyncFunction } from "../types";
         return new Promise(async (resolve,reject)=>{
             let result
             let timerId = setTimeout(()=>{
-                if(options.default===undefined){
+                if(options.default==undefined){
                     reject(new Error("TIMEOUT"))
                 }else{
                     resolve(options.default)
@@ -24,7 +24,7 @@ import type { AsyncFunction } from "../types";
                 result = await fn.call(this,...arguments) 
                 resolve(result)
             }catch(e){
-                if(options.default===undefined){
+                if(options.default==undefined){
                     reject(new Error("TIMEOUT"))
                 }else{
                     resolve(options.default)

@@ -1,6 +1,8 @@
 /**
  * 
  * 排队调用被装饰的方法
+ * 
+ * 
  
 
  */
@@ -9,12 +11,73 @@ import type {DecoratorOptions} from "../decorator"
 import type {AsyncFunction } from "../types"
 import {DecoratorManager, createManagerDecorator,DecoratorManagerOptions } from "../manager"
 
-export interface QueueOptions extends DecoratorOptions {
-    size?  : number,                    // 队列大小
-    default?: any                       // 如果提供则返回该默认值而不是触发错误
+
+
+export enum QueueBufferOverflowBehaviour {
+    Discard = 0,                            // 丢弃
+    Overlap =1,                             // 覆盖最后一个
+    Expand = 2,                             // 扩展缓冲区
+    Slide = 3,                              // 滑动缓冲区
+    ExpandAndSlide = 4                      // 先扩展再滑动   
 }
-export interface IGetQueueDecoratorOptions {
+
+export interface QueueOptions extends DecoratorOptions {
+    size?  : number,                                // 队列大小,默认值是8
+    maxSize? : number,                              // 缓冲区最大值
+    priority?:Function | undefined,                 // 优先级
+    overflow?:QueueBufferOverflowBehaviour,         // 队列溢出时的处理方式, 
+    default?: any                                   // 如果提供则返回该默认值而不是触发错误
+}
+
+export interface IQueueDecoratorOptionsReader {
     getQueueDecoratorOptions(options:QueueOptions,methodName:string | symbol,decoratorName:string):QueueOptions
+}
+
+export interface QueueTask{
+    id?:number,                                
+    timestamp?:number                       // 放进队列的时间
+    
+}
+
+class QueueManager extends DecoratorManager{
+    
+}
+
+class QueueTaskExecutor{
+    #tasks:QueueTask[] = []
+    #isExecuting:boolean = false
+    constructor(options: QueueOptions ){
+        
+    }
+    async start(){
+        while(true){
+            // 从队列中取出
+            let task = this.#tasks.pop()
+            
+        }
+    }
+    /**
+     * 取出最后一个任务
+     */
+    _pop(){
+        this.#tasks.splice(0,1)
+    }
+    async stop(){
+
+    }
+    /**
+     * 添加信息
+     * @param task 
+     */
+    push(instance:any,args: any){
+        let task = {
+            id:1,
+            timestamp:Date.now(),
+            args: args,
+            instance
+        }
+        this.#tasks.push(task)
+    }
 }
 
 export const queue = createDecorator<QueueOptions,AsyncFunction,number>("queue",
@@ -23,9 +86,11 @@ export const queue = createDecorator<QueueOptions,AsyncFunction,number>("queue",
         default:null
     },{
         wrapper: function(method:AsyncFunction,options:QueueOptions):AsyncFunction{
-            return method
+            let queue = new QueueTaskExecutor(options)
+            return async function(this:any){
+                return queue.push(this,arguments)
+            }
         },
-        proxyOptions:true,
         defaultOptionKey:"size"
     })
 
@@ -34,24 +99,8 @@ export interface QueueManagerOptions extends DecoratorManagerOptions{
     size?: number;          // 队列大小
 }
 
-class QueueManager extends DecoratorManager{
-    async start(){
 
-    }
-    async stop(){
-
-    }
-}
-
-
-export const queueManager = createManagerDecorator<QueueManager,QueueManagerOptions>(
-    "queue",
-    QueueManager,
-    {
-        enable:true,
-        size:10
-    }
-)
+export const queueManager = queue
 
 
 

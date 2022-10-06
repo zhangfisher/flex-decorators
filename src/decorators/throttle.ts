@@ -9,7 +9,7 @@ export interface ThrottleOptions extends DecoratorOptions {
     noTrailing?  : boolean,
     debounceMode?: boolean
 }
-export interface IGetThrottleDecoratorOptions {
+export interface IThrottleDecoratorOptionsReader {
     getThrottleDecoratorOptions(options:ThrottleOptions,methodName:string | symbol,decoratorName:string):ThrottleOptions
 }
 
@@ -23,7 +23,6 @@ export const throttle = createDecorator<ThrottleOptions>("throttle",
         wrapper: function(method:AsyncFunction,options:ThrottleOptions):Function{
             return throttleWrapper(method,options)
         },
-        proxyOptions:true,
         defaultOptionKey:"interval"
     })
 

@@ -2,8 +2,8 @@ import { expect, test, beforeEach } from 'vitest'
 import { 
     createDecorator,getDecorators,DecoratorOptions ,
     resetMethodDecorator,
-    timeout,TimeoutOptions,IGetTimeoutDecoratorOptions,
-    retry,RetryOptions,IGetRetryDecoratorOptions,
+    timeout,TimeoutOptions,ITimeoutDecoratorOptionsReader,
+    retry,RetryOptions,IRetryDecoratorOptionsReader,
     noReentry,debounce,throttle
 } from "../src/index" 
 
@@ -40,8 +40,7 @@ const logProWrapper = function(method:logProMethod,options:logOptions):logProMet
     }
 }
 let logPro = createDecorator<logOptions,logProMethod>("logPro",{},{
-    wrapper:logProWrapper,
-    proxyOptions:true
+    wrapper:logProWrapper
 })
 
 
@@ -52,7 +51,6 @@ interface MyCacheOptions extends DecoratorOptions{
 let myCache = createDecorator<MyCacheOptions>("myCache",{
     ttl:0
 },{
-    proxyOptions:true,
     wrapper:function(method:Function,options:MyCacheOptions):Function{
         let caches:{[key:string | number]:any} = {}
         return function(this:any){
@@ -65,10 +63,10 @@ let myCache = createDecorator<MyCacheOptions>("myCache",{
 })
 
 
-class A implements IGetTimeoutDecoratorOptions{
+class A implements ITimeoutDecoratorOptionsReader{
     logDecorators = {}
     timeoutValue = 100
-    runTimes = 10
+    runDelay = 10
     constructor(){
         this.logDecorators = getDecorators(this,"log")    
     }
@@ -89,7 +87,7 @@ class A implements IGetTimeoutDecoratorOptions{
     }
     @timeout()
     async run(){
-        await delay(this.runTimes)
+        await delay(this.runDelay)
     }
 }
 
@@ -167,10 +165,10 @@ test("超时装饰器",async ()=>{
     await a1.run()
     let t2 =Date.now()
     expect(t2-t1).toBeLessThan(a1.timeoutValue)
-    expect(t2-t1).toBeGreaterThanOrEqual(a1.runTimes)
+    expect(t2-t1).toBeGreaterThanOrEqual(a1.runDelay)
     // 第二运行超时
     a1.timeoutValue = 100
-    a1.runTimes = 200
+    a1.runDelay = 200
     t1 =Date.now()
     try{
         await a1.run()
@@ -200,7 +198,7 @@ test("超时采用默认值的装饰器",async ()=>{
 })
 
 test("重试装饰器",async ()=>{
-    class R implements IGetRetryDecoratorOptions{
+    class R implements IRetryDecoratorOptionsReader{
         interval=0
         count=1
         runCount = 0
@@ -355,8 +353,7 @@ test("装饰器参数变更导致重新包装函数",async ()=>{
                 if(count>options.max) count =0
                 this.current = count
             }
-        },
-        proxyOptions:true
+        }
     })
     class X {
         customOptions: Record<string,any> = {}
@@ -405,7 +402,6 @@ test("手动重置装饰器重新包装函数",async ()=>{
                 this.current = count
             }
         },
-        proxyOptions:true,
         autoReWrapper:false
     })
     class X {
