@@ -40,19 +40,14 @@ export function getDecorators(instance: any,decoratorName?:string,options?:{cach
     },options)
     // 返回缓存中的数据
     let cache = instance.constructor.__DECORATORS__
-    if(opts?.cache==undefined && cache){
+    if(opts?.cache && cache){
         if(decoratorName && decoratorName in cache){
             return cache[decoratorName]
         }else{
             return cache as DecoratorList
         }        
     }
-    let metadatas:DecoratorList = {} ;
-    if(decoratorName){
-        metadatas = metadatas as DecoratorList
-    }else{
-        metadatas = metadatas as DecoratorList
-    }
+    let metadatas:DecoratorList | DecoratedMethodList = {} ;
 
     let propertyNames = getPropertyNames(instance)
     propertyNames.forEach(propertyName =>{
@@ -72,8 +67,8 @@ export function getDecorators(instance: any,decoratorName?:string,options?:{cach
                     if(!metadatas[decoratorName]) metadatas[decoratorName]={}
                     let metadata = Reflect.getMetadata(key,instance,propertyName)
                     if(metadata && metadata.length>0){
-                        if(!(propertyName in metadatas[decoratorName])) metadatas[decoratorName][propertyName]=[]
-                        metadatas[decoratorName][propertyName].push(...metadata)
+                        if(!(propertyName in metadatas[decoratorName])) (metadatas as DecoratorList)[decoratorName][propertyName]=[];
+                        (metadatas as DecoratorList)[decoratorName][propertyName].push(...metadata)
                     }
                 }
             })
@@ -93,11 +88,12 @@ export function getDecorators(instance: any,decoratorName?:string,options?:{cach
             })            
         })
     })
-    if(opts?.cache){
+    // 仅当没有提供装饰器名称时才进行缓存
+    if(opts?.cache && !decoratorName){
         instance.constructor.__DECORATORS__ = metadatas
     }
 
-    return decoratorName ? metadatas[decoratorName] : metadatas
+    return decoratorName ? (metadatas[decoratorName]  as DecoratedMethodList): (metadatas as DecoratorList)
 } 
 
 
@@ -126,15 +122,41 @@ export enum DecoratorManagerStatus {
     ERROR        = 9                            // ERROR
 }
 
+export type DecoratorMethodContext = {
+    options:Record<string,any> 
+    target:Object                      // 被装饰的目标类
+    descriptor:any                     //
+    methodName:string                  // 被装饰的方法名称
+    asyncOptionsReader:boolean         //get<decoratorName>DecoratorOptions和getDecoratorOptions是否是异步方法
+    optionsReader?:Object | Function
+    [key:string]:any
+}
+export type DecoratorContext = {
+    defaultOptions:Record<string,any>           // 装饰器默认参数
+    createOptions:Record<string,any>            // 创建装饰器的参数
+    decoratorName:string                        
+    [key:string]:any
+}
+/**
+ * 当调用被装饰的方法时的回调
+ */
+export interface IDecoratorManagerHook {    
+    onBeforeCall(instance:object,methodContext:Record<string,any>,decoratorContext:Record<string,any>):void
+    onAfterCall(instance:object,result:any,methodContext:Record<string,any>,decoratorContext:Record<string,any>):void
+}
+
 /**
  * 装饰器管理器基类
  */
 export class DecoratorManager implements IDecoratorManager{    
+    #decoratorName:string = ""                                              // 装饰器名称
     #options:Record<string,any>  
     #status: DecoratorManagerStatus = DecoratorManagerStatus.INITIAL        // 状态
     #instances:any[] = []                                                   // 保存装饰实例引用 
     #runningSignal:AllowNull<IAsyncSignal>
-    constructor(options:Record<string,any>){
+    #stopingSignal:AllowNull<IAsyncSignal>
+    constructor(decoratorName:string,options:Record<string,any>){
+        this.#decoratorName=decoratorName
         this.#options = Object.assign({
             enable:true
         },options)
@@ -142,6 +164,7 @@ export class DecoratorManager implements IDecoratorManager{
     }    
     get enable():boolean{ return this.#options.enable  }
     set enable(value:boolean){ this.#options.enable =value }
+    get decoratorName():string { return this.#decoratorName }
     get status():DecoratorManagerStatus { return this.#status }
     get running(): boolean { return this.#status==DecoratorManagerStatus.RUNNING  } 
     
@@ -155,7 +178,7 @@ export class DecoratorManager implements IDecoratorManager{
             return await this.#runningSignal(timeout)
         }
         if(![DecoratorManagerStatus.INITIAL,DecoratorManagerStatus.ERROR].includes(this.#status)){
-            throw new Error(`Unload start <${this.constructor.name}> decoratorManager`)
+            throw new Error(`Unload start <${this.#decoratorName}> decoratorManager`)
         }
         try{
             this.#status = DecoratorManagerStatus.STARTING            
@@ -176,13 +199,31 @@ export class DecoratorManager implements IDecoratorManager{
     */
     async onStart(...args: any[]){
         //throw new Error("Method not implemented.");
-    }
+    } 
+    async stop(timeout?:number) {
+        if([DecoratorManagerStatus.ERROR,DecoratorManagerStatus.INITIAL,DecoratorManagerStatus.STOPPED].includes(this.#status)) return
+
+        // 如果正在停止则等待
+        if(this.#status == DecoratorManagerStatus.STOPPING && this.#stopingSignal){
+            return await this.#stopingSignal(timeout)
+        }       
+
+        try{
+            this.#status = DecoratorManagerStatus.STOPPING            
+            this.#stopingSignal = asyncSignal()
+            await this.onStop()
+            this.#status = DecoratorManagerStatus.STOPPED
+            this.#stopingSignal.resolve()
+        }catch(e:any){
+            this.#status = DecoratorManagerStatus.ERROR;
+            if(this.#stopingSignal) this.#stopingSignal.reject(e)
+        }finally{
+            this.#stopingSignal = null
+        }     
+    }    
     async onStop(...args: any[]){
         //throw new Error("Method not implemented.");
-    }     
-    stop() {
-        
-    }
+    }    
     /**
      * 将使用装饰器的实例注册到管理器中
      * @param instance 

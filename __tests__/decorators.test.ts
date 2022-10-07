@@ -29,21 +29,7 @@ const logWrapper = function(method:Function,options:logOptions):Function{
 let log = createDecorator<logOptions>("log",{},{
     wrapper:logWrapper
 })
-type logProMethod = (info:string)=>string
-
-const logProWrapper = function(method:logProMethod,options:logOptions):logProMethod{
-    return function(this:any,info:string){
-        if(options.prefix) logs.push(options.prefix)
-        logs.push(method(arguments[0]))
-        if(options.suffix) logs.push(options.suffix)
-        return ""
-    }
-}
-let logPro = createDecorator<logOptions,logProMethod>("logPro",{},{
-    wrapper:logProWrapper
-})
-
-
+  
 interface MyCacheOptions extends DecoratorOptions{
     key?:string,
     ttl?:number
@@ -90,72 +76,7 @@ class A implements ITimeoutDecoratorOptionsReader{
         await delay(this.runDelay)
     }
 }
-
-class AA extends A{
-    getLogProDecoratorOptions(options:logOptions,methodName:string,decoratorName:string):logOptions{
-        if(methodName=="printPro"){
-            options.prefix = "Pro:"
-        }
-        return options
-    }
-    @log()
-    print(info:string):string{
-        return info
-    }
-    @log({
-        prefix:"AA-Before",
-        suffix:"AA-After"
-    })
-    print2(info:string):string{
-        return info
-    }
-    @logPro({
-        prefix:"LogPro-Before",
-        suffix:"LogPro-After"
-    })
-    printPro(info:string):string{
-        return info
-    }
-
-}
-
-beforeEach(()=>{
-    logs=[]
-})
-
-test("日志装饰器",async ()=>{
-    let a1 = new A()
-    await a1.print("x")
-    expect(logs).toStrictEqual(["Before","x","After"])
-    expect(Object.keys(a1.logDecorators)).toStrictEqual(["print"])
-    let aa1 = new AA()
-    await aa1.print("x")
-    expect(logs).toStrictEqual(["Before","x","After","x"])    
-})
-
-test("继承的日志装饰器",async ()=>{
-    let aa1 = new AA()
-    await aa1.print("x")
-    await aa1.print2("x")
-    expect(Object.keys(aa1.logDecorators)).toStrictEqual(["print","print2"])
-    expect(logs).toStrictEqual([
-        "x",
-        "AA-Before","x","AA-After"
-    ])
-})
-
-
-
-test("从实例中读取日志装饰器参数",async ()=>{
-    let aa1 = new AA()
-    await aa1.printPro("x")
-    expect(Object.keys(getDecorators(aa1,"logPro"))).toStrictEqual(["printPro"])
-    expect(logs).toStrictEqual([
-        "Pro:","x","LogPro-After"
-    ]) 
-})
-
-
+ 
 
 test("超时装饰器",async ()=>{
     let a1= new A()

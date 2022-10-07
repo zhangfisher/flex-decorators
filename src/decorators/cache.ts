@@ -29,8 +29,7 @@ export const cache = createDecorator<CacheOptions>("cache",
              return function(){
                 return method
              }             
-         },
-         proxyOptions:true,
+         }, 
          defaultOptionKey:"size"
      })
  

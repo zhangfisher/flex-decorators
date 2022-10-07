@@ -63,7 +63,7 @@ let AsyncSignalId = 0
 
 export function asyncSignal(constraint?:Function,options:{timeout:number}={timeout:0}) : IAsyncSignal {     
      let isResolved:boolean = false,isRejected:boolean = false,isPending:boolean = false
-     let resolveSignal:Function, rejectSignal:Function, timeoutId:number = 0
+     let resolveSignal:Function, rejectSignal:Function, timeoutId:any = 0
      let objPromise:Promise<any> | null
      let signalId = ++AsyncSignalId
 
@@ -93,7 +93,6 @@ export function asyncSignal(constraint?:Function,options:{timeout:number}={timeo
  
          // 指定超时功能
          if (timeout > 0) {
-             // 超时不受约束条件的控制
              timeoutId = setTimeout(() => {
                  isResolved = true
                  try {

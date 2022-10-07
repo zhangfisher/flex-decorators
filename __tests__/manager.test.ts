@@ -132,7 +132,9 @@ const syncCache = createDecorator<
 })
 
 beforeEach(async () => {
-    await cache.destroyManager()
+    try{
+        await cache.destroyManager()
+    }catch(err){}    
 })
 
 interface ICacheManager{
