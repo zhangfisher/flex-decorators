@@ -3,8 +3,8 @@ import {
     createDecorator    
 } from "../src/index" 
 import { delay } from "../src/utils"
-import { DecoratorOptions } from '../src/decorator';
-import { DecoratorManager, DecoratorManagerOptions } from '../src/manager';
+import { DecoratorContext, DecoratorMethodContext, DecoratorOptions } from '../src/decorator';
+import { DecoratorManager, DecoratorManagerOptions, IDecoratorManagerHook } from '../src/manager';
 
 interface CacheOptions extends DecoratorOptions{
     ttl?:number
@@ -15,10 +15,12 @@ interface CacheManagerOptions extends DecoratorManagerOptions{
     ttl?:number
 }
 
-class CacheManager extends DecoratorManager{
+class CacheManager extends DecoratorManager implements IDecoratorManagerHook{
     static seq :number = 0;
     id:number = 0
     #values:Record<string,any> ={}
+    beforeHooks:any[] = []
+    afterHooks:any[] = []
     get values():Record<string,any>{return this.#values}
     constructor(decoratorName:string,options:Record<string,any>){
         super(decoratorName,options)
@@ -46,6 +48,12 @@ class CacheManager extends DecoratorManager{
     }
     async onStop(){
 
+    }    
+    onBeforeCall(instance: object, args: any[], methodContext: DecoratorMethodContext, decoratorContext: DecoratorContext): void {
+        this.beforeHooks = [instance, args, methodContext, decoratorContext]
+    }
+    onAfterCall(instance: object, returns: any, methodContext: DecoratorMethodContext, decoratorContext: DecoratorContext): void {
+        this.afterHooks= [instance, returns, methodContext, decoratorContext]
     }
 }
 //
@@ -473,4 +481,29 @@ test("从实例中异步读取装饰器参数",async ()=>{
     expect(manager).toBeInstanceOf(DecoratorManager)
     expect(manager.has("CACHE_GETDATA")).toBeTruthy()    
     expect(manager.has("CACHE_GETDATA1")).toBeTruthy()        
+})
+test("验证管理器Hook执行",async ()=>{
+    class A{
+        value:number = 0
+        users:string[] = []
+        @cache()
+        getData(value:number){
+            return this.value + value
+        }
+    }
+    let a1 = new A()
+    let manager = cache.getManager() as CacheManager
+    
+    let result =await a1.getData(1)
+    expect(manager.beforeHooks.length).toBe(4)
+    expect(manager.beforeHooks[0]).toBe(a1)
+    expect(manager.beforeHooks[1]).toStrictEqual([1])
+
+
+    expect(manager.afterHooks.length).toBe(4)
+    expect(manager.afterHooks[0]).toBe(a1)
+    expect(manager.afterHooks[1]).toStrictEqual(result)
+
+
+
 })

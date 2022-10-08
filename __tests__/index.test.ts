@@ -154,13 +154,9 @@ test("从实例中读取日志装饰器参数",async ()=>{
     let aa1 = new AA()
     await aa1.printPro("x")
     expect(Object.keys(getDecorators(aa1,"logPro"))).toStrictEqual(["printPro"])
-    expect(logs).toStrictEqual([
-        "Pro:","x","LogPro-After"
-    ]) 
+    expect(logs).toStrictEqual(["Pro:","x","LogPro-After"]) 
     expect(Object.keys(getDecorators(aa1,"logPro"))).toStrictEqual(["printPro"])
-    expect(logs).toStrictEqual([
-        "Pro:","x","LogPro-After"
-    ]) 
+    expect(logs).toStrictEqual(["Pro:","x","LogPro-After"]) 
 })
 
 
@@ -175,7 +171,9 @@ test("从实例中读取所有装饰器参数",async ()=>{
 test("从实例中读取被指定装饰器装饰的方法",async ()=>{
     let aa1 = new AA()
     let logManager = log.getManager()
-    let methods = logManager.getMethods(aa1)
-    expect(Object.keys(methods)).toStrictEqual(["print","print2"]) 
+    let methods = logManager?.getMethods(aa1)
+    if(methods){
+        expect(Object.keys(methods)).toStrictEqual(["print","print2"]) 
+    }    
 })
 

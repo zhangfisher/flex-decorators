@@ -5,6 +5,7 @@
 import { hasOwnProperty,getPropertyNames } from "./utils";
 import { asyncSignal, IAsyncSignal } from "./asyncSignal"
 import type { AllowNull,TypedClassDecorator, Constructor} from "./types"; 
+import { DecoratorContext, DecoratorMethodContext } from "./decorator";
 
 /**
  * getDecorators返回的当前实例的装饰器信息
@@ -122,27 +123,13 @@ export enum DecoratorManagerStatus {
     ERROR        = 9                            // ERROR
 }
 
-export type DecoratorMethodContext = {
-    options:Record<string,any> 
-    target:Object                      // 被装饰的目标类
-    descriptor:any                     //
-    methodName:string                  // 被装饰的方法名称
-    asyncOptionsReader:boolean         //get<decoratorName>DecoratorOptions和getDecoratorOptions是否是异步方法
-    optionsReader?:Object | Function
-    [key:string]:any
-}
-export type DecoratorContext = {
-    defaultOptions:Record<string,any>           // 装饰器默认参数
-    createOptions:Record<string,any>            // 创建装饰器的参数
-    decoratorName:string                        
-    [key:string]:any
-}
+
 /**
  * 当调用被装饰的方法时的回调
  */
 export interface IDecoratorManagerHook {    
-    onBeforeCall(instance:object,methodContext:Record<string,any>,decoratorContext:Record<string,any>):void
-    onAfterCall(instance:object,result:any,methodContext:Record<string,any>,decoratorContext:Record<string,any>):void
+    onBeforeCall(instance:object,args:any[],methodContext:DecoratorMethodContext,decoratorContext:DecoratorContext):void
+    onAfterCall(instance:object,returns:any,methodContext:DecoratorMethodContext,decoratorContext:DecoratorContext):void
 }
 
 /**
@@ -197,7 +184,7 @@ export class DecoratorManager implements IDecoratorManager{
     * 由子类继承用来实现具体的启动逻辑
     * @param args 
     */
-    async onStart(...args: any[]){
+    async onStart(){
         //throw new Error("Method not implemented.");
     } 
     async stop(timeout?:number) {
@@ -221,7 +208,7 @@ export class DecoratorManager implements IDecoratorManager{
             this.#stopingSignal = null
         }     
     }    
-    async onStop(...args: any[]){
+    async onStop(){
         //throw new Error("Method not implemented.");
     }    
     /**
