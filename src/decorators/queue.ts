@@ -30,6 +30,7 @@ export interface QueueOptions extends DecoratorOptions {
     default?      : any                                             // 如果提供则返回该默认值而不是触发错误
     objectify?    : boolean                                          // 执行方法后是否返回一个QueueTask对象
     maxQueueTime? : number                                          // 最大的排队时间，超出时会自动丢弃
+    onDiscard?    : Function                                        // 当任务被抛弃时的回调
 }
 
 export interface IQueueDecoratorOptionsReader {
