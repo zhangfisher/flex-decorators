@@ -82,7 +82,7 @@ test("排队执行溢出逻辑",async ()=>{
     await manager.getDispatcher(a1,'goSlide')?.waitForIdle()
     // 默认队列缓冲区是8
     expect(a1.values).toStrictEqual([12,13,14,15,16,17,18,19])
-},9999999)
+})
  
 test("排队执行失败重试",async ()=>{
     class A {      
@@ -104,7 +104,8 @@ test("排队执行失败重试",async ()=>{
 
     let task = a1.go(1) as unknown as QueueTask
     await task.done()
-    expect(a1.retryCount).toBe(5)
+    // 第一次执行失败后，再重试5次，所以retryCount=6
+    expect(a1.retryCount).toBe(6)  
 
 
 

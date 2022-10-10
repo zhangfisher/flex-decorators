@@ -170,19 +170,7 @@ export class QueueTaskDispatcher{
         if(timeout>0){
             finalMethod = timeoutWrapper(finalMethod as AsyncFunction,{value:this.timeout,default:this.options.default})
         }
-        let results
-        let hasError:Error | undefined = undefined 
-        try{
-            results =  await finalMethod()
-        }catch(e){
-            hasError = e as Error
-        }finally{
-            if(task instanceof QueueTask) {
-                this.emit(`${task.id}:done`,hasError,results)
-            }
-        }
-        if(hasError) throw hasError
-        return results
+        return  await finalMethod()
     }   
     
     start(){
@@ -208,13 +196,13 @@ export class QueueTaskDispatcher{
                             this.push(task)                            
                             break
                         }else if(this.failure == 'retry'){// 重试         
-                            if(i < totalRunCount) await delay(this.retryInterval)
+                            if(i < totalRunCount && this.retryInterval>0) await delay(this.retryInterval)
                         }else{
                             break
                         }
                     }finally{                        
                         task.runCount++
-                        if(task instanceof QueueTask) {
+                        if(task instanceof QueueTask && i==totalRunCount-1){
                             this.emit(`${task.id}:done`,hasError,results)                        
                         }
                     }
@@ -426,7 +414,7 @@ export const queue = createDecorator<QueueOptions,any,number>("queue",
         retryInterval: 0,
         timeout      : 0,
         default      : undefined,
-        objectify    : true
+        objectify    : false
     },{
         wrapper: function(method:Function,options:QueueOptions,manager:DecoratorManager):Function {
             return function(this:any):QueueTask | undefined {
