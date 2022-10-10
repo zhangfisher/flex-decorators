@@ -19,74 +19,81 @@ export type QueueFailureBehaviour  = "ignore" | "retry" | "requeue"
 export type QueueOverflowOptions = 'discard' | 'overlap' | 'slide' 
 
 export interface QueueOptions extends DecoratorOptions {
-    id?:string
-    length?:number   
-    overflow?: QueueOverflowOptions        // 队列溢出时的处理方式,discard=丢弃,overlap=覆盖最后一条,slide=挤出最早一条
-    priority?:AllowNull<(tasks:QueueTask[])=>QueueTask[]>             // 优先级
-    failure?: QueueFailureBehaviour           // 执行出错时的行为，ignore=什么都不做,retry=重试,requeue=重新排队，但是受retryCount限制
-    retryCount?:number
-    retryInterval?:number
-    timeout?:number
-    default?: any                                   // 如果提供则返回该默认值而不是触发错误
+    id?           : string
+    length?       : number   
+    overflow?     : QueueOverflowOptions                            // 队列溢出时的处理方式,discard=丢弃,overlap=覆盖最后一条,slide=挤出最早一条
+    priority?     : AllowNull<(tasks:QueueTask[])=>QueueTask[]>     // 优先级
+    failure?      : QueueFailureBehaviour                           // 执行出错时的行为，ignore=什么都不做,retry=重试,requeue=重新排队，但是受retryCount限制
+    retryCount?   : number
+    retryInterval?: number
+    timeout?      : number
+    default?      : any                                             // 如果提供则返回该默认值而不是触发错误
+    objectify?    : boolean                                          // 执行方法后是否返回一个QueueTask对象
+    maxQueueTime? : number                                          // 最大的排队时间，超出时会自动丢弃
 }
 
 export interface IQueueDecoratorOptionsReader {
     getQueueDecoratorOptions(options:QueueOptions,methodName:string | symbol,decoratorName:string):QueueOptions
 }
+
 export enum QueueTaskStatus{
-    Waiting=0,                              // 正在等待执行
-    Executing=1,                            // 正在执行
-    Completed=2,                            // 已执行完成
-    Error=3                                 // 执行出错
+    Queuing=0,                              // 正在排队等待执行
+    Cancelled=1,
+    Executing=2,                            // 正在执行
+    Done=3                                 // 已执行完成
 }
 
 
 export class QueueTask{
-    id              : number=0                                
-    createTime?     : number                                // 创建任务的时间
-    lastExecuteTime?: number                                // 最近一次执行的时间
+    static seq :number = 0;
+    id              : number=0                              // 任务id
+    #inqueueTime     : number                               // 任务开始排队的时间
     runCount        : number=0                              // 执行次数，当出错重试执行时有用
-    #returns        : any     
-    #status         : QueueTaskStatus = QueueTaskStatus.Waiting
-    #abort          : boolean = false                      // 中止标志
-    constructor(public executor:QueueTaskExecutor, public method:AsyncFunction,public args:any[] = []) {
-        this.createTime= Date.now()         
+    #returns        : any                                   // 执行结果，如果出错则是一个错误对象
+    #status         : QueueTaskStatus = QueueTaskStatus.Queuing
+    constructor(public executor:QueueTaskDispatcher, public method:Function,public args:any[] = []) {
+        this.id = ++QueueTask.seq
+        this.#inqueueTime= Date.now()     
+        this._reset()
     }
-    get status():QueueTaskStatus{ return this.#status    }
-    get abort():boolean { return this.#abort}
-    set abort(value:boolean) { this.#abort = value }
+    get status():QueueTaskStatus{ return this.#status }
+    get cancelled():boolean{ return this.#status == QueueTaskStatus.Cancelled}
+    get inqueueTime():number{ return this.#inqueueTime }
+    
+    /**
+     * 此方法不能直接调用，在push任务时或新建时用来订阅事件
+     */
+    _reset(){
+        this.executor.once(`${this.id}:executing`,this._onBeginTask.bind(this))
+        this.executor.once(`${this.id}:done`,this._onEndTask.bind(this))
+        this.#status = QueueTaskStatus.Queuing
+        this.#returns = undefined
+    }
+    _onEndTask(error:Error | undefined,results:any){
+        this.#status = QueueTaskStatus.Done
+        this.#returns = error instanceof Error ? error : results
+    }
+    _onBeginTask(){
+        this.#status = QueueTaskStatus.Executing
+    }
+
     /**
      * 返回任务执行的返回值
      */
     get returns(){  
-        if(this.#status == QueueTaskStatus.Completed){
+        if(this.#status == QueueTaskStatus.Done){
             return this.#returns
         }else{
             throw new Error("The Task has not been completed")
         }        
     } 
-    async execute(timeout:number=0,defaultValue?:any){
-        let finalMethod = applyParams(this.method,...this.args)
-        if(timeout>0){
-            finalMethod = timeoutWrapper(finalMethod as AsyncFunction,{value:timeout,default:defaultValue})
-        }
-        let hasError:Error | undefined = undefined 
-        try{
-            this.#returns = await finalMethod()
-        }catch(e){
-            hasError = e as Error
-        }finally{
-            this.executor.eventemitter.emit(`${this.id}:done`,hasError,this.#returns)
-        }
-        if(hasError) throw hasError
-    }   
     /**
      * 等待任务执行完毕
      */ 
     async done(){
-        if(this.#status==QueueTaskStatus.Completed) return
+        if(this.#status==QueueTaskStatus.Done) return
         return new Promise<void>((resolve)=>{
-            this.executor.eventemitter.once(`${this.id}:done`,()=>{
+            this.executor.once(`${this.id}:done`,()=>{
                 resolve()
             })
         })
@@ -96,66 +103,106 @@ export class QueueTask{
      * @param callback  (e,result)
      */
     on(callback:Function){
-        this.executor.eventemitter.on(`${this.id}:done`,callback)
+        this.executor.on(`${this.id}:done`,callback)
     }
     off(callback:Function){
-        this.executor.eventemitter.off(`${this.id}:done`,callback)
+        this.executor.off(`${this.id}:done`,callback)
     }
     once(callback:Function){
-        this.executor.eventemitter.once(`${this.id}:done`,callback)
+        this.executor.once(`${this.id}:done`,callback)
     }
 }
 
-export enum QueueTaskExecutorEvents{
+export enum QueueTaskDispatcherEvents{
     idle='idle',            // 队列空闲时
+    // <taskId>:executing   // 任务开始执行
+    // <taskId>:done        // 任务执行完成  
 }
+
+
+// 正在排除的任务
+export type QueueingTask ={id?:number,args:any[],runCount?:number,inqueueTime?:number} | QueueTask  
 
 /**
  * 负责调试执行任务
  * 每个执行器均具有一个唯一的id
  */
-export class QueueTaskExecutor{
-    #tasks:QueueTask[] = []
+export class QueueTaskDispatcher{
+    #tasks:QueueingTask[] = []
     #waitForTask:IAsyncSignal = asyncSignal()     // 当有任务时的等待信号
     #hasNewTask:boolean = false                     // 自上一次pop后是否有新任务进来
-    #options:QueueOptions
+    #options:Required<QueueOptions>
     #running:boolean = false
     #isIdle:boolean = false
     #eventemitter:LiteEventEmitter
-    constructor( options: QueueOptions ){
+    #method:Function
+    constructor(method:Function, options: QueueOptions ){
         this.#options= Object.assign({
+            id:0,
             retryCount:0,
             retryInterval:0,
             timeout:0,
             length:8,
-            overflow:'slide'
-        },options)
-        this.#eventemitter = new LiteEventEmitter()
+            overflow:'slide',
+            maxQueueTime:0,
+            failure:"ignore"
+        },options) as Required<QueueOptions>
+        this.#method = method
+        this.#eventemitter = new LiteEventEmitter()  
     }    
+
+
     get id(): string  { return String(this.#options.id) }
     get options(): QueueOptions{ return this.#options}
     get running(): boolean{ return this.#running}
-    get retryCount(): number{ return this.#options.retryCount || 0}
-    get timeout(): number{ return this.#options.timeout || 0}
-    get retryInterval(): number{ return this.#options.retryInterval || 0}
-    get failure(): QueueFailureBehaviour{ return this.#options.failure || 'ignore'}
-    get bufferLength(): number{ return this.#options.length  || 8 }
-    get bufferOverflow(): QueueOverflowOptions{ return this.#options.overflow || 'slide'} 
+    get retryCount(): number{ return this.#options.retryCount}
+    get maxQueueTime(): number{ return this.#options.maxQueueTime}
+    get retryInterval(): number{ return this.#options.retryInterval}
+    get timeout(): number{ return this.#options.timeout}
+    get failure(): QueueFailureBehaviour{ return this.#options.failure}
+    get bufferLength(): number{ return this.#options.length }
+    get bufferOverflow(): QueueOverflowOptions{ return this.#options.overflow} 
     get eventemitter():LiteEventEmitter{ return this.#eventemitter }
+    
+    async _executeMethod(task:QueueingTask,timeout:number=0){
+        let finalMethod = applyParams(this.#method ,...task.args)
+        if(timeout>0){
+            finalMethod = timeoutWrapper(finalMethod as AsyncFunction,{value:this.timeout,default:this.options.default})
+        }
+        let results
+        let hasError:Error | undefined = undefined 
+        try{
+            results =  await finalMethod()
+        }catch(e){
+            hasError = e as Error
+        }finally{
+            if(task instanceof QueueTask) {
+                this.emit(`${task.id}:done`,hasError,results)
+            }
+        }
+        if(hasError) throw hasError
+        return results
+    }   
+    
     start(){
         this.#running =true;
         setTimeout(async () =>{
             while(this.#running){
                 let task = await this.pop();
                 if(task.runCount > this.retryCount) continue;
-                if(task.abort) continue                
-                // 开始执行
+                if(task.cancelled) continue                
+                if(this.maxQueueTime>0 && (Date.now() - task.inqueueTime>this.maxQueueTime)) continue; // 丢弃过期任务
                 let totalRunCount =this.retryCount + 1
+                let results,hasError 
                 for(let i = 0; i < totalRunCount; i++){
                     try{ 
-                        await task.execute()
+                        if(task instanceof QueueTask) {
+                            this.emit(`${task.id}:executing`)
+                        }
+                        results = await this._executeMethod(task,this.timeout)
                         break
-                    }catch(e){
+                    }catch(e:any){               
+                        hasError = e         
                         if(this.failure == 'requeue'){ // 重新入列
                             this.push(task)                            
                             break
@@ -164,16 +211,33 @@ export class QueueTaskExecutor{
                         }else{
                             break
                         }
-                    }finally{
+                    }finally{                        
                         task.runCount++
+                        if(task instanceof QueueTask) {
+                            this.emit(`${task.id}:done`,hasError,results)                        
+                        }
                     }
                 } 
                 this.#isIdle = this.#tasks.length===0
                 if(this.#isIdle){
-                    this.#eventemitter.emit("idle")
+                    this.emit(QueueTaskDispatcherEvents.idle)
                 }
             }            
         },0)        
+    }
+    /**
+     * 清除队列中已超出最大排队时间的任务
+     */
+    _clearExpiredTasks(){
+        const maxQueueTime = this.options.maxQueueTime || 0
+        if(maxQueueTime == 0) return 
+        const now = Date.now()
+        for(var i=this.#tasks.length-1;i>=0;i--){
+            const inqueueTime = this.#tasks[i].inqueueTime || 0
+            if(now - inqueueTime > maxQueueTime){
+                this.#tasks.splice(i,1)
+            } 
+        }
     }
     /**
      * 取出最后一个任务，如果没有任务则等待
@@ -183,7 +247,13 @@ export class QueueTaskExecutor{
             if(isFunction(this.options.priority) && this.#hasNewTask){
                 this.#hasNewTask = false;
                 try{
-                    this.#tasks = (this.options.priority as Function)(this.#tasks)
+                    if(isFunction(this.options.priority)){
+                        this.#tasks = (this.options.priority as Function)(this.#tasks)
+                    }else if(typeof(this.options.priority)=='string'){
+                        // this.#tasks =this.#tasks.sort((task1,task2) => {
+                            
+                        // })
+                    }                    
                 }catch(e){
 
                 }
@@ -206,13 +276,20 @@ export class QueueTaskExecutor{
      * 添加信息
      * @param task 
      */
-    push(task : {method:any,args: any} | QueueTask){        
-        let newTask 
+    push(task : QueueingTask):QueueTask | undefined {        
+        let newTask = task
         if(task instanceof QueueTask){
+            task._reset()
             newTask = task
+        }else if(this.options.objectify){
+            newTask = new QueueTask(this,this.#method,task.args)            
         }else{
-            newTask = new QueueTask(this,task.method,task.args)
+            newTask = { args:task.args,runCount:0,inqueueTime:Date.now() }
         }  
+        // 清除过期的任务
+        if(this.#tasks.length>=this.bufferLength){
+            this._clearExpiredTasks()
+        }
         if(this.#tasks.length>=this.bufferLength){
             switch(this.bufferOverflow){
                 case "discard":
@@ -231,17 +308,26 @@ export class QueueTaskExecutor{
         this.#isIdle = false
         this.#hasNewTask = true
         this.#waitForTask.resolve()
-        return newTask
+        if(this.options.objectify) return newTask as QueueTask
     }
     /**
-     * 等待队列为空
+     * 等待队列为空 
      */
     async waitForIdle(){
         if(this.#isIdle) return 
         await this.#eventemitter.wait("idle")
     }    
-    on(event:QueueTaskExecutorEvents,callback:Function){
-        this.#eventemitter.on(event,callback)
+    on(event:string,callback:Function){
+        return this.#eventemitter.on(event,callback)
+    }
+    off(event:string,callback:Function){
+        return this.#eventemitter.off(event,callback)
+    }
+    once(event:string,callback:Function){
+        return this.#eventemitter.once(event,callback)
+    }
+    emit(event:string,...args:any[]){
+        this.#eventemitter.emit(event,...args)
     }
 }
 
@@ -249,7 +335,7 @@ export class QueueTaskExecutor{
 
 export class QueueManager extends DecoratorManager implements IDecoratorManagerHook{
     // {<实例>:{[装饰器id]:<Executor实例>},...}
-    #executors: Map<object,Map<string,QueueTaskExecutor>> = new Map()
+    #dispatchers: Map<object,Map<string,QueueTaskDispatcher>> = new Map()
     constructor(decoratorName:string,options:Record<string,any>){
         super(decoratorName,options)
     }  
@@ -267,48 +353,48 @@ export class QueueManager extends DecoratorManager implements IDecoratorManagerH
      * @param instance 
      * @returns 
      */
-    getExecutor(instance: object,executorId:string):QueueTaskExecutor | undefined {
-        if(this.hasExecutor(instance,executorId)){
-            return (this.#executors.get(instance) as Map<string,QueueTaskExecutor>).get(executorId)
+    getDispatcher(instance: object,dispatcherId:string):QueueTaskDispatcher | undefined {
+        if(this.hasDispatcher(instance,dispatcherId)){
+            return (this.#dispatchers.get(instance) as Map<string,QueueTaskDispatcher>).get(dispatcherId)
         }
     }
     /**
      * 登记队列管理器
      * @param instance 
-     * @param executor 
+     * @param dispatcher 
      */
-    addExecutor(instance: object,executor:QueueTaskExecutor){
-        if(!this.#executors.has(instance)){
-            this.#executors.set(instance,new Map<string,QueueTaskExecutor>())
+    addDispatcher(instance: object,dispatcher:QueueTaskDispatcher){
+        if(!this.#dispatchers.has(instance)){
+            this.#dispatchers.set(instance,new Map<string,QueueTaskDispatcher>())
         }
-        let instanceExecutors = this.#executors.get(instance)   
-        if(instanceExecutors){
-            instanceExecutors.set(executor.id,executor);
+        let instanceDispatchers = this.#dispatchers.get(instance)   
+        if(instanceDispatchers){
+            instanceDispatchers.set(dispatcher.id,dispatcher);
         }  
     }
-    removeExecutor(instance: object,executorId:string){
-        if(!this.#executors.has(instance)){
+    removeDispatcher(instance: object,dispatcherId:string){
+        if(!this.#dispatchers.has(instance)){
             return            
         }
-        let instanceExecutors = this.#executors.get(instance)   
-        if(instanceExecutors){
-            if(instanceExecutors.has(executorId)){
-                instanceExecutors.delete(executorId)
+        let instanceDispatchers = this.#dispatchers.get(instance)   
+        if(instanceDispatchers){
+            if(instanceDispatchers.has(dispatcherId)){
+                instanceDispatchers.delete(dispatcherId)
             }
-            if(instanceExecutors.size == 0){
-                this.#executors.delete(instance)
+            if(instanceDispatchers.size == 0){
+                this.#dispatchers.delete(instance)
             }
         }
     }
-    createExecutor(instance: object,options:QueueOptions):QueueTaskExecutor{
-        let executor = new QueueTaskExecutor(options)
-        executor.start()
-        this.addExecutor(instance,executor)
-        return executor
+    createDispatcher(instance: object,method:Function,options:QueueOptions):QueueTaskDispatcher{
+        let dispatcher = new QueueTaskDispatcher(method,options)
+        dispatcher.start()
+        this.addDispatcher(instance,dispatcher)
+        return dispatcher
     }    
-    hasExecutor(instance: object,executorId:string):boolean{
-        if(this.#executors.has(instance)){
-            return (this.#executors.get(instance) as Map<string,QueueTaskExecutor>).has(executorId)
+    hasDispatcher(instance: object,dispatcherId:string):boolean{
+        if(this.#dispatchers.has(instance)){
+            return (this.#dispatchers.get(instance) as Map<string,QueueTaskDispatcher>).has(dispatcherId)
         }else{
             return false
         }
@@ -318,12 +404,12 @@ export class QueueManager extends DecoratorManager implements IDecoratorManagerH
      * @param instance 
      * @param executorId 
      */
-    getAndCreateExecutor(instance: object,options:QueueOptions):QueueTaskExecutor{
-        let executorId = options.id || ''
-        if(this.hasExecutor(instance,executorId)){
-            return this.getExecutor(instance,executorId) as QueueTaskExecutor 
+    getAndCreateDispatcher(instance: object,method:Function,options:QueueOptions):QueueTaskDispatcher{
+        let dispatcherId = options.id || ''
+        if(this.hasDispatcher(instance,dispatcherId)){
+            return this.getDispatcher(instance,dispatcherId) as QueueTaskDispatcher 
         }else{
-            return this.createExecutor(instance,options) 
+            return this.createDispatcher(instance,method,options) 
         }
     }
 }
@@ -338,14 +424,15 @@ export const queue = createDecorator<QueueOptions,any,number>("queue",
         retryCount   : 0,
         retryInterval: 0,
         timeout      : 0,
-        default      : undefined
+        default      : undefined,
+        objectify    : true
     },{
         wrapper: function(method:Function,options:QueueOptions,manager:DecoratorManager):Function {
             return function(this:any):QueueTask | undefined {
-                let executor:QueueTaskExecutor
-                executor  = (manager as QueueManager).getAndCreateExecutor(this,options)
-                if(executor){
-                    return executor.push({method:method.bind(this),args:arguments}) 
+                let dispatcher:QueueTaskDispatcher
+                dispatcher  = (manager as QueueManager).getAndCreateDispatcher(this,method.bind(this),options)
+                if(dispatcher){
+                    return dispatcher.push({args:[...arguments]}) 
                 }else{
                     throw new Error("QueueTaskExecutor not available")
                 }              

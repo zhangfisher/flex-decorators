@@ -121,14 +121,15 @@ export function isAsyncFunction(fn:any):boolean{
  * @param fn
  * @return {function(): *}
  */
-export function applyParams(fn:AsyncFunction,...params:any[]):AsyncFunction{
+export function applyParams(fn:Function,...params:any[]):AsyncFunction | Function{
     if(params.length===0) {
-        return fn
+        return fn 
     }
     return async function (this:any){
-        return await fn.call(this,...params)
+        return await fn.apply(this,params)
     }
 }
+ 
 
 /**
  * 首字符大写

@@ -13,7 +13,7 @@ beforeEach(()=>{
 test("排队执行",async ()=>{
     class A {      
         values:number[] = []
-        @queue()
+        @queue({objectify:true})
         async go(value:number){ 
             this.values.push(value)
             await delay(10)
@@ -25,7 +25,7 @@ test("排队执行",async ()=>{
         tasks.push(a1.go(i) as unknown as QueueTask)
     }
 
-    await Promise.all(tasks.map(task=>task.wait()));
+    await Promise.all(tasks.map(task=>task.done()));
     expect(a1.values).toStrictEqual(new Array(count).fill(0).map((v,i) =>i))
 
 })
@@ -33,17 +33,17 @@ test("排队执行",async ()=>{
 test("排队执行溢出逻辑",async ()=>{
     class A {      
         values:number[] = []
-        @queue({overflow:"discard"})
+        @queue({overflow:"discard",objectify:true})
         async goDiscard(value:number){ 
             this.values.push(value)
             await delay(20)
         }
-        @queue({overflow:"overlap"})
+        @queue({overflow:"overlap",objectify:true})
         async goOverlap(value:number){ 
             this.values.push(value)
             await delay(20)
         }
-        @queue({overflow:"slide"})
+        @queue({overflow:"slide",objectify:true})
         async goSlide(value:number){ 
             this.values.push(value)
             await delay(20)
@@ -57,7 +57,7 @@ test("排队执行溢出逻辑",async ()=>{
         tasks.push(a1.goDiscard(i) as unknown as QueueTask)
     }
     // 等待执行队列空
-    await manager.getExecutor(a1,'goDiscard')?.waitForIdle()
+    await manager.getDispatcher(a1,'goDiscard')?.waitForIdle()
     // 默认队列缓冲区是8
     expect(a1.values).toStrictEqual(new Array(8).fill(0).map((v,i) =>i))
 
@@ -68,7 +68,7 @@ test("排队执行溢出逻辑",async ()=>{
         tasks.push(a1.goOverlap(i) as unknown as QueueTask)
     }
     // 等待执行队列空
-    await manager.getExecutor(a1,'goOverlap')?.waitForIdle()
+    await manager.getDispatcher(a1,'goOverlap')?.waitForIdle()
     // 默认队列缓冲区是8
     expect(a1.values).toStrictEqual([0,1,2,3,4,5,6,19])
 
@@ -79,10 +79,10 @@ test("排队执行溢出逻辑",async ()=>{
         tasks.push(a1.goSlide(i) as unknown as QueueTask)
     }
     // 等待执行队列空
-    await manager.getExecutor(a1,'goSlide')?.waitForIdle()
+    await manager.getDispatcher(a1,'goSlide')?.waitForIdle()
     // 默认队列缓冲区是8
     expect(a1.values).toStrictEqual([12,13,14,15,16,17,18,19])
-})
+},9999999)
  
 test("排队执行失败重试",async ()=>{
     class A {      
@@ -90,7 +90,8 @@ test("排队执行失败重试",async ()=>{
         retryCount:number = 0
         @queue({ 
             retryCount:5,
-            failure:"retry"
+            failure:"retry",
+            objectify:true
         })
         async go(value:number){ 
             this.values.push(value)
