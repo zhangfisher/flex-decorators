@@ -6,8 +6,7 @@
  */
  import { createDecorator } from "../decorator"
  import type {DecoratorOptions} from "../decorator"
- import type {AsyncFunction } from "../types"
- import {DecoratorManager, createManagerDecorator,DecoratorManagerOptions } from "../manager"
+ import {DecoratorManager, DecoratorManagerOptions } from "../manager"
  
  export interface CacheOptions extends DecoratorOptions {
     expires?  : number                  // 过期时间，,以ms为单位，过期缓存失效

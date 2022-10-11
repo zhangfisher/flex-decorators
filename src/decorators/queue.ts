@@ -9,7 +9,7 @@
 import { createDecorator, DecoratorContext, DecoratorMethodContext } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
 import type {AllowNull, AsyncFunction } from "../types"
-import {DecoratorManager,  IDecoratorManagerHook } from "../manager"
+import {DecoratorManager,  DecoratorManagerOptions,  IDecoratorManagerHook } from "../manager"
 import { asyncSignal,IAsyncSignal } from "../asyncSignal"
 import { applyParams, delay,  isFunction } from "../utils"
 import timeoutWrapper from "../wrappers/timeout"
@@ -321,22 +321,12 @@ export class QueueTaskDispatcher{
 }
 
 
-
-export class QueueManager extends DecoratorManager implements IDecoratorManagerHook{
+export class QueueManager extends DecoratorManager{
     // {<实例>:{[装饰器id]:<Executor实例>},...}
     #dispatchers: Map<object,Map<string,QueueTaskDispatcher>> = new Map()
-    constructor(decoratorName:string,options:Record<string,any>){
+    constructor(decoratorName:string,options:DecoratorManagerOptions){
         super(decoratorName,options)
     }  
-    onBeforeCall(instance: object, args: any[], methodContext: DecoratorMethodContext, decoratorContext: DecoratorContext): void {
-        throw new Error("Method not implemented.")
-    }
-    onAfterCall(instance: object, returns: any, methodContext: DecoratorMethodContext, decoratorContext: DecoratorContext): void {
-        throw new Error("Method not implemented.")
-    }
-    async onStart(){
-
-    }
     /**
      * 返回队列执行器实例
      * @param instance 

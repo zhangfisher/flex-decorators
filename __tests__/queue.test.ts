@@ -1,4 +1,4 @@
-import { expect, test, beforeEach } from 'vitest'
+import { expect, test, beforeEach,beforeAll } from 'vitest'
 import { delay } from "../src/utils"
 import {
     queue,IQueueDecoratorOptionsReader,QueueTask,QueueManager
@@ -8,6 +8,10 @@ import {
 
 beforeEach(()=>{
     
+})
+
+beforeAll(()=>{    
+    let manager = queue.getManager() as QueueManager     
 })
 
 test("排队执行",async ()=>{
@@ -100,15 +104,34 @@ test("排队执行失败重试",async ()=>{
         } 
     }
     let a1 = new A()  
+    let task = a1.go(1) as unknown as QueueTask
+    await task.done()
+    // 第一次执行失败后，再重试5次，所以retryCount=6
+    expect(a1.retryCount).toBe(6)  
+})
+
+
+test("排队任务执行超时处理",async ()=>{
+    class A {      
+        values:number[] = []
+        retryCount:number = 0
+        @queue({ 
+            retryCount:5,
+            failure:"retry",
+            objectify:true
+        })
+        async go(value:number){ 
+            this.values.push(value)
+            this.retryCount++
+            throw new Error()
+        } 
+    }
+    let a1 = new A()  
     let manager = queue.getManager() as QueueManager    
+    
 
     let task = a1.go(1) as unknown as QueueTask
     await task.done()
     // 第一次执行失败后，再重试5次，所以retryCount=6
     expect(a1.retryCount).toBe(6)  
-
-
-
-
-
 })

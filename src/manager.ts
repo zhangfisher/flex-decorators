@@ -107,7 +107,7 @@ interface IDecoratorManager{
 }
 
 export interface DecoratorManagerOptions{
-    enable?:boolean                                     // 是否启用/禁用装饰器
+    enable?:boolean                                     // 是否启用/禁用装饰器，对作用域下的所有装饰器起作用
     scope?: 'class' | 'instance' | 'global'             // 管理器作用域
 }
  
@@ -137,19 +137,19 @@ export interface IDecoratorManagerHook {
  */
 export class DecoratorManager implements IDecoratorManager{    
     #decoratorName:string = ""                                              // 装饰器名称
-    #options:Record<string,any>  
+    #options:DecoratorManagerOptions 
     #status: DecoratorManagerStatus = DecoratorManagerStatus.INITIAL        // 状态
     #instances:any[] = []                                                   // 保存装饰实例引用 
     #runningSignal:AllowNull<IAsyncSignal>
     #stopingSignal:AllowNull<IAsyncSignal>
-    constructor(decoratorName:string,options:Record<string,any>){
+    constructor(decoratorName:string,options:DecoratorManagerOptions){
         this.#decoratorName=decoratorName
         this.#options = Object.assign({
             enable:true
         },options)
     
     }    
-    get enable():boolean{ return this.#options.enable  }
+    get enable():boolean{ return this.#options.enable==undefined ? true : this.#options.enable  }
     set enable(value:boolean){ this.#options.enable =value }
     get decoratorName():string { return this.#decoratorName }
     get status():DecoratorManagerStatus { return this.#status }
@@ -164,7 +164,7 @@ export class DecoratorManager implements IDecoratorManager{
         if(this.#status == DecoratorManagerStatus.STARTING && this.#runningSignal){
             return await this.#runningSignal(timeout)
         }
-        if(![DecoratorManagerStatus.INITIAL,DecoratorManagerStatus.ERROR].includes(this.#status)){
+        if(![DecoratorManagerStatus.INITIAL,DecoratorManagerStatus.STOPPED,DecoratorManagerStatus.ERROR].includes(this.#status)){
             throw new Error(`Unload start <${this.#decoratorName}> decoratorManager`)
         }
         try{
@@ -263,7 +263,7 @@ function defineDecoratorManagerProperty<T extends Constructor,O extends Decorato
     )     
 }
 
-export interface ManagerDecoratorCreator<T extends DecoratorManager,O extends DecoratorManagerOptions>{ 
+export interface ManagerDecoratorCreator<T,O extends DecoratorManagerOptions>{ 
     (options?: O):TypedClassDecorator<T>
 }
 /**
@@ -284,7 +284,7 @@ export interface ManagerDecoratorCreator<T extends DecoratorManager,O extends De
  *  T: 管理器类
  *  O: 管理器类配置参数类型
  */
- export function createManagerDecorator<T extends DecoratorManager,O extends DecoratorManagerOptions>(decoratorContext:Record<string,any>, managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<T,O>{
+ export function createManagerDecorator<T,O extends DecoratorManagerOptions>(decoratorContext:DecoratorContext, managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<T,O>{
     return (options?: O):TypedClassDecorator<T>=>{
         return function<T extends Constructor>(this:any,targetClass: T){  
             let finalOptions = Object.assign({scope:'global'},defaultOptions,options || {})

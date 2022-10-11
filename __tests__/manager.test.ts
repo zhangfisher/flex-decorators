@@ -1,4 +1,4 @@
-import { beforeEach,expect, test,vi } from 'vitest'
+import { beforeEach,expect, test,vi,describe } from 'vitest'
 import {  
     createDecorator    
 } from "../src/index" 
@@ -72,10 +72,12 @@ const cache = createDecorator<CacheOptions>("cache",{ttl:0,key:undefined},{
             return  result
         }
     },
+    asyncWrapper:true,// 声明异步包装
     manager:CacheManager
 })
 
-const cacheScope = cache.createManager<CacheManager,CacheManagerOptions>(CacheManager,{
+ 
+const cacheScope = cache.createManagerDecorator<CacheManager,CacheManagerOptions>(CacheManager,{
     enable:true,
     ttl:10
 })
@@ -144,10 +146,9 @@ beforeEach(async () => {
         await cache.destroyManager()
     }catch(err){}    
 })
+describe("管理器",() => {
 
-interface ICacheManager{
-    getCacheManager():CacheManager
-}
+
 
 test("Cache装饰器自动创建管理器",async ()=>{
     class A{
@@ -190,7 +191,7 @@ test("自动启动Cache装饰器全局管理器装饰",async ()=>{
     let cacheManager:CacheManager = (a1 as any).cacheManager
     expect(cacheManager).toBeInstanceOf(CacheManager)
     expect(cacheManager.running).toBe(false)
-    expect(a1.getData()).resolves.toBe(0)
+    await expect(a1.getData()).resolves.toBe(0)
     await cacheManager.start()
     expect(cacheManager.running).toBe(true)
 })
@@ -505,5 +506,7 @@ test("验证管理器Hook执行",async ()=>{
     expect(manager.afterHooks[1]).toStrictEqual(result)
 
 
+
+})
 
 })

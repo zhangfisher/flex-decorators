@@ -1,6 +1,6 @@
 import "reflect-metadata";
-import { DecoratorManager, createManagerDecorator, IDecoratorManagerHook  } from './manager';
-import { getPropertyNames,isDiff,pick,isClass,firstUpperCase,isAsyncFunction,isFunction } from "./utils"
+import { DecoratorManager, createManagerDecorator   } from './manager';
+import { isDiff,pick,isClass,firstUpperCase,isAsyncFunction } from "./utils"
 import type {ManagerDecoratorCreator,DecoratorManagerOptions}  from "./manager"
 import type { Constructor } from "./types"
 
@@ -37,13 +37,13 @@ export type DecoratorContext = {
 
 export interface DecoratorOptions {
     id?: string | number;  
-    enable?: boolean
+    enable?: boolean                            // 是否启用或关闭装饰器
 }
 type TypedMethodDecorator<T> = (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
 
 interface DecoratorCreator<T,M,D> {
     (options?:T | D):TypedMethodDecorator<M> 
-    createManager<X extends DecoratorManager,O extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<X,O>
+    createManagerDecorator<X extends DecoratorManager,O extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<X,O>
     getManager():DecoratorManager | undefined
     destroyManager():Awaited<Promise<any>>
 }
@@ -52,7 +52,9 @@ export type DecoratorManagerCreateFinalOptions = {
     autoStart?:boolean                              // 是否启动装饰器管理器，当第一次调用时会实例化管理器，如果=false，则管理器需要由开发者自行初始化并启动
     initial?:'demand' | 'once'                      // 决定什么时候实例化管理器，once=立刻实例化, demand=按需实例化, manual
     creator?:DecoratorManager | Function | typeof DecoratorManager    
+    defaultOptions?:Record<string,any>              // 传递给管理器实例的默认构造参数
 }
+
 export type DecoratorManagerCreateOptions = DecoratorManagerCreateFinalOptions | (DecoratorManager | Function | typeof DecoratorManager) | undefined
 
 export interface createDecoratorOptions<T,M>{
@@ -203,6 +205,7 @@ function useCommonDecoratorWrapper<T extends DecoratorOptions,M>(decoratorContex
         
     // 返回包装后的方法
     function getWrappedMethod(this:any,finalOptions:Record<string,any>,manager:DecoratorManager | undefined ){
+        if(finalOptions.enable===false) return oldMethod
         // 触发重新对被装饰函数进行包装的条件： 
         // - autoReWrapper=true && isDiff(oldOptions,options)
         // - 调用resetMethodDecorator(this,<装饰器名称>,<id>)
@@ -348,22 +351,23 @@ function defineDecoratorMetadata<T>(decoratorContext:DecoratorContext,methodCont
 
 /**
  * 根据管理器参数创建管理器实例
- * @param options 
+ * @param managerOptions 
  * @returns 
  */
-function createDecoratorManager(decoratorName: string,options: DecoratorManagerCreateFinalOptions): DecoratorManager | undefined {    
-    if(!options) return     
-    let manager, creator = options.creator
+function createDecoratorManager(decoratorName: string,managerOptions: DecoratorManagerCreateFinalOptions): DecoratorManager | undefined {    
+    if(!managerOptions) return     
+    let manager, creator = managerOptions.creator
     if(typeof creator == 'function' && !isClass(creator)){
-        creator = (options as Function)()
+        creator = (managerOptions as Function)()
     }
     if(isClass(creator)){
-        manager = new (options.creator as Constructor)(decoratorName,options)
-    }else if(options.creator instanceof DecoratorManager){
-        manager = options.creator
+        manager = new (managerOptions.creator as Constructor)(decoratorName,managerOptions.defaultOptions)
+    }else if(managerOptions.creator instanceof DecoratorManager){
+        manager = managerOptions.creator
     }     
     return manager
 }
+
 /**
  * 
  * 创建装饰器
@@ -380,12 +384,14 @@ function createDecoratorManager(decoratorName: string,options: DecoratorManagerC
  * 
  */
  
-export function createDecorator<T extends DecoratorOptions,M=any,D=any>(decoratorName:string,defaultOptions?:T,opts?:createDecoratorOptions<T,M>): DecoratorCreator<T,M,D>{
+export function createDecorator<T extends DecoratorOptions,METHOD=any,D=any>(decoratorName:string,defaultOptions?:T,opts?:createDecoratorOptions<T,METHOD>): DecoratorCreator<T,METHOD,D>{
     const managerPropName =`__${decoratorName}Manager__`
-    let createOptions:createDecoratorOptions<T,M> = Object.assign({
+    let createOptions:createDecoratorOptions<T,METHOD> = Object.assign({
         singleton:true,
         autoReWrapper:true,
+        asyncWrapper:'auto'
     },opts)
+
     if(typeof createOptions.manager!="object"){
         createOptions.manager = {
             autoStart:true,
@@ -415,8 +421,8 @@ export function createDecorator<T extends DecoratorOptions,M=any,D=any>(decorato
     } 
 
     // T:装饰器参数,D:装饰器默认值的类型
-    function decorator(options?: T | D ):TypedMethodDecorator<M> {        
-        return function(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<M>):TypedPropertyDescriptor<M> | void {            
+    function decorator(options?: T | D ):TypedMethodDecorator<METHOD> {        
+        return function(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<METHOD>):TypedPropertyDescriptor<METHOD> | void {            
             // 当前装饰方法的上下文对象,
             let methodContext:DecoratorMethodContext= {
                 class:target,
@@ -436,18 +442,22 @@ export function createDecorator<T extends DecoratorOptions,M=any,D=any>(decorato
 
             // 3.对被装饰方法函数进行包装
             if(typeof opts?.wrapper=="function"){
-                descriptor.value = useCommonDecoratorWrapper<T,M>(decoratorContext,methodContext,<M>descriptor.value)                
+                descriptor.value = useCommonDecoratorWrapper<T,METHOD>(decoratorContext,methodContext,<METHOD>descriptor.value)                
             }   
             return descriptor            
         };         
     }  
     // 创建装饰器管理器
-    decorator.createManager = function<X extends DecoratorManager,O extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<X,O>{
-        return createManagerDecorator<X,O>(decoratorContext,managerClass,defaultOptions)
+    decorator.createManagerDecorator = function<MANAGER extends DecoratorManager,OPTIONS extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:OPTIONS):ManagerDecoratorCreator<MANAGER,OPTIONS>{
+        return createManagerDecorator<MANAGER,OPTIONS>(decoratorContext,managerClass,defaultOptions)
     }       
-    // 获取全局管理器
+
+    // 获取全局管理器    
     decorator.getManager = function():DecoratorManager | undefined{
         if(!decoratorContext.manager){
+            if(!createOptions.manager || (createOptions.manager && ('creator' in createOptions.manager) && !createOptions.manager.creator)){
+                throw new Error(`The decorator<${decoratorName}> does not support the manager`)
+            }
             let manager = createDecoratorManager(decoratorName,createOptions.manager as DecoratorManagerCreateFinalOptions)
             if(manager && manager instanceof DecoratorManager){
                 decoratorContext.manager = manager
@@ -455,13 +465,15 @@ export function createDecorator<T extends DecoratorOptions,M=any,D=any>(decorato
         }
         return decoratorContext.manager as DecoratorManager
     }
+
     // 销毁全局管理器
     decorator.destroyManager =async function(){
         if(decoratorContext.manager){
             await decoratorContext.manager.stop()
             delete decoratorContext.manager
         }        
-    }
+    } 
+
     return decorator 
 }   
 
