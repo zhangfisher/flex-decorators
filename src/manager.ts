@@ -109,6 +109,7 @@ interface IDecoratorManager{
 export interface DecoratorManagerOptions{
     enable?:boolean                                     // 是否启用/禁用装饰器，对作用域下的所有装饰器起作用
     scope?: 'class' | 'instance' | 'global'             // 管理器作用域
+    defaultDecoratorOptions?:Record<string,any>         // 装饰器默认参数，可以为作用域内装饰器提供通用参数
 }
  
 /**
@@ -145,15 +146,19 @@ export class DecoratorManager implements IDecoratorManager{
     constructor(decoratorName:string,options:DecoratorManagerOptions){
         this.#decoratorName=decoratorName
         this.#options = Object.assign({
-            enable:true
+            enable:true,
+            scope:'global',
+            defaultDecoratorOptions:{}
         },options)
     
     }    
+    get options():DecoratorManagerOptions{ return this.#options}
     get enable():boolean{ return this.#options.enable==undefined ? true : this.#options.enable  }
     set enable(value:boolean){ this.#options.enable =value }
     get decoratorName():string { return this.#decoratorName }
     get status():DecoratorManagerStatus { return this.#status }
     get running(): boolean { return this.#status==DecoratorManagerStatus.RUNNING  } 
+    get defaultDecoratorOptions():Record<string,any> { return this.#options.defaultDecoratorOptions as Record<string,any> }
     
     /**
      * 启动管理器，并且等待启动完成

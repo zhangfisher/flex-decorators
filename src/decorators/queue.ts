@@ -21,9 +21,9 @@ export type QueueOverflowOptions = 'discard' | 'overlap' | 'slide'
 export interface QueueOptions extends DecoratorOptions {
     id?           : string
     length?       : number   
-    overflow?     : QueueOverflowOptions                            // 队列溢出时的处理方式,discard=丢弃,overlap=覆盖最后一条,slide=挤出最早一条
-    priority?     : AllowNull<(tasks:QueueTask[])=>QueueTask[]>     // 优先级
-    failure?      : QueueFailureBehaviour                           // 执行出错时的行为，ignore=什么都不做,retry=重试,requeue=重新排队，但是受retryCount限制
+    overflow?     : QueueOverflowOptions                                        // 队列溢出时的处理方式,discard=丢弃,overlap=覆盖最后一条,slide=挤出最早一条
+    priority?     : AllowNull<(tasks:QueueTask[])=>QueueTask[]>  | string       // 优先级，当参数只有一个且是Object可以指定对象中的某个键值作为优先级,如果是多个参数，可以指定第几个参数作为排序
+    failure?      : QueueFailureBehaviour                                       // 执行出错时的行为，ignore=什么都不做,retry=重试,requeue=重新排队，但是受retryCount限制
     retryCount?   : number
     retryInterval?: number
     timeout?      : number
@@ -70,12 +70,14 @@ export class QueueTask{
         this.#status = QueueTaskStatus.Queuing
         this.#returns = undefined
     }
+    
+    _onBeginTask(){
+        this.#status = QueueTaskStatus.Executing
+    }
+
     _onEndTask(error:Error | undefined,results:any){
         this.#status = QueueTaskStatus.Done
         this.#returns = error instanceof Error ? error : results
-    }
-    _onBeginTask(){
-        this.#status = QueueTaskStatus.Executing
     }
 
     /**
@@ -116,6 +118,7 @@ export class QueueTask{
 
 export enum QueueTaskDispatcherEvents{
     idle='idle',            // 队列空闲时
+    discard = 'discard',    // 任务被丢弃
     // <taskId>:executing   // 任务开始执行
     // <taskId>:done        // 任务执行完成  
 }
@@ -137,7 +140,9 @@ export class QueueTaskDispatcher{
     #isIdle:boolean = false
     #eventemitter:LiteEventEmitter
     #method:Function
-    constructor(method:Function, options: QueueOptions ){
+    #instance:object
+    constructor(instance:object, method:Function, options: QueueOptions ){
+        this.#instance = instance;
         this.#options= Object.assign({
             id:0,
             retryCount:0,
@@ -151,10 +156,8 @@ export class QueueTaskDispatcher{
         this.#method = method
         this.#eventemitter = new LiteEventEmitter()  
     }    
-
-
     get id(): string  { return String(this.#options.id) }
-    get options(): QueueOptions{ return this.#options}
+    get options(): Required<QueueOptions>{ return this.#options}
     get running(): boolean{ return this.#running}
     get retryCount(): number{ return this.#options.retryCount}
     get maxQueueTime(): number{ return this.#options.maxQueueTime}
@@ -164,7 +167,8 @@ export class QueueTaskDispatcher{
     get bufferLength(): number{ return this.#options.length }
     get bufferOverflow(): QueueOverflowOptions{ return this.#options.overflow} 
     get eventemitter():LiteEventEmitter{ return this.#eventemitter }
-    
+    get instance(){return this.#instance}
+
     async _executeMethod(task:QueueingTask,timeout:number=0){
         let finalMethod = applyParams(this.#method ,...task.args)
         if(timeout>0){
@@ -172,16 +176,26 @@ export class QueueTaskDispatcher{
         }
         return  await finalMethod()
     }   
-    
+    _checkForIdle(){ 
+        this.#isIdle = this.#tasks.length===0
+        if(this.#isIdle){
+            this.emit(QueueTaskDispatcherEvents.idle)
+        }
+    }
     start(){
         this.#running =true;
         setTimeout(async () =>{
-            while(this.#running){
+            while(this.#running){            
                 let task = await this.pop();
-                if(task.runCount > this.retryCount) continue;
-                if(task.cancelled) continue                
-                if(this.maxQueueTime>0 && (Date.now() - task.inqueueTime>this.maxQueueTime)) continue; // 丢弃过期任务
-                let totalRunCount =this.retryCount + 1
+                // 丢弃任务，任务超过重试次数 /任务被取消 /  丢弃过期任务  
+                if(task.runCount > this.#options.retryCount 
+                    || task.cancelled                                 
+                    || (this.maxQueueTime>0 && (Date.now() - task.inqueueTime > this.maxQueueTime))) {
+                        this.emit('discard',task)
+                        this._checkForIdle()
+                        continue;  
+                }
+                let totalRunCount =this.#options.retryCount + 1
                 let results,hasError 
                 for(let i = 0; i < totalRunCount; i++){
                     try{ 
@@ -206,11 +220,8 @@ export class QueueTaskDispatcher{
                             this.emit(`${task.id}:done`,hasError,results)                        
                         }
                     }
-                } 
-                this.#isIdle = this.#tasks.length===0
-                if(this.#isIdle){
-                    this.emit(QueueTaskDispatcherEvents.idle)
-                }
+                }   
+                this._checkForIdle()
             }            
         },0)        
     }
@@ -219,12 +230,15 @@ export class QueueTaskDispatcher{
      */
     _clearExpiredTasks(){
         const maxQueueTime = this.options.maxQueueTime || 0
-        if(maxQueueTime == 0) return 
+        if(maxQueueTime <= 0) return 
         const now = Date.now()
         for(var i=this.#tasks.length-1;i>=0;i--){
             const inqueueTime = this.#tasks[i].inqueueTime || 0
             if(now - inqueueTime > maxQueueTime){
+                let task = this.#tasks[i]
                 this.#tasks.splice(i,1)
+                this.emit(QueueTaskDispatcherEvents.discard,task)
+                this._checkForIdle()
             } 
         }
     }
@@ -237,12 +251,18 @@ export class QueueTaskDispatcher{
                 this.#hasNewTask = false;
                 try{
                     if(isFunction(this.options.priority)){
-                        this.#tasks = (this.options.priority as Function)(this.#tasks)
+                        this.#tasks = (this.options.priority as Function).call(this.#instance,this.#tasks)
                     }else if(typeof(this.options.priority)=='string'){
-                        // this.#tasks =this.#tasks.sort((task1,task2) => {
-                            
-                        // })
-                    }                    
+                        const sortKey = this.options.priority
+                        const sortOrder =  String(this.options.priority).startsWith("-") ? 'desc' : 'asc'
+                        this.#tasks =this.#tasks.sort((task1,task2) => {
+                            let arg1 = typeof(task1.args[0]) =='object' ?  task1.args[0][sortKey] : task1.args[0]
+                            let arg2 = typeof(task2.args[0]) =='object' ?  task2.args[0][sortKey] : task2.args[0]
+                            return sortOrder == 'desc' ? arg1 - arg2 : arg2 - arg1                       
+                        })
+                    }else if(typeof(this.options.priority)=='number'){
+
+                    }                
                 }catch(e){
 
                 }
@@ -366,7 +386,7 @@ export class QueueManager extends DecoratorManager{
         }
     }
     createDispatcher(instance: object,method:Function,options:QueueOptions):QueueTaskDispatcher{
-        let dispatcher = new QueueTaskDispatcher(method,options)
+        let dispatcher = new QueueTaskDispatcher(instance,method,options)
         dispatcher.start()
         this.addDispatcher(instance,dispatcher)
         return dispatcher
@@ -413,7 +433,7 @@ export const queue = createDecorator<QueueOptions,any,number>("queue",
                 if(dispatcher){
                     return dispatcher.push({args:[...arguments]}) 
                 }else{
-                    throw new Error("QueueTaskExecutor not available")
+                    throw new Error(`QueueTaskDispatcher<${method.name}> not available`)
                 }              
             }       
         },

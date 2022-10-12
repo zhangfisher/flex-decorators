@@ -11,7 +11,8 @@ beforeEach(()=>{
 })
 
 beforeAll(()=>{    
-    let manager = queue.getManager() as QueueManager     
+    let manager = queue.getManager() as QueueManager    
+    manager.defaultDecoratorOptions.objectify = true 
 })
 
 test("排队执行",async ()=>{
@@ -111,27 +112,121 @@ test("排队执行失败重试",async ()=>{
 })
 
 
-test("排队任务执行超时处理",async ()=>{
+test("排队任务过期自动清理",async ()=>{
+    let tasks = [] , count = 10 ,discardCount:number = 0
     class A {      
         values:number[] = []
-        retryCount:number = 0
-        @queue({ 
-            retryCount:5,
-            failure:"retry",
-            objectify:true
+        @queue({
+            length:10,
+            maxQueueTime:20   // 最大排队时间
         })
         async go(value:number){ 
             this.values.push(value)
-            this.retryCount++
-            throw new Error()
+            await delay(100)
         } 
     }
-    let a1 = new A()  
+    let a1 = new A() 
+    for(let i = 0; i < count;i++){
+        tasks.push(a1.go(i) as unknown as QueueTask)
+    } 
     let manager = queue.getManager() as QueueManager    
-    
+    let dispatcher = manager.getDispatcher(a1,'go')
+    dispatcher?.on("discard",() => discardCount++ )
+    await dispatcher?.waitForIdle()    
+
+    expect(a1.values.length).toBe(1)   
+    expect(a1.values[0]).toBe(0)    
+    expect(discardCount).toBe(9)    
+
+})
+
+
+test("排队任务执行超时处理",async ()=>{
+    class A {      
+        value:number = 0
+        @queue({
+            timeout:5
+        })
+        async go(value:number){ 
+            this.value = value
+            await delay(100)
+        } 
+    }
+    let count = 10 
+    let a1 = new A()  
 
     let task = a1.go(1) as unknown as QueueTask
     await task.done()
-    // 第一次执行失败后，再重试5次，所以retryCount=6
-    expect(a1.retryCount).toBe(6)  
+    expect(a1.value).toBe(1)  
+    expect(task.returns).toBeInstanceOf(Error)
+    expect(task.returns.message).toBe("TIMEOUT")
+})
+
+
+
+test("执行任务采用优先级函数",async ()=>{
+    let tasks = [] , count = 8 
+    let priorityThis
+    class A {      
+        values:number[] = []
+        @queue({
+            priority:function(tasks:QueueTask[]):QueueTask[]{
+                priorityThis = this
+                return tasks.sort((task1,task2) =>{
+                    return task2.args[0] - task1.args[0]  
+                })
+            }
+        })
+        async go(value:number){ 
+            this.values.push(value)
+            await delay(10)
+        } 
+    }
+    let a1 = new A() 
+    let args = [1,2,3,4,5,6,7,8]
+    for(let i = 0; i < count;i++){
+        tasks.push(a1.go(args[i]) as unknown as QueueTask)
+    } 
+
+    let manager = queue.getManager() as QueueManager    
+    let dispatcher = manager.getDispatcher(a1,'go')
+    await dispatcher?.waitForIdle()    
+    expect(priorityThis).toBe(a1)
+    expect(a1.values.length).toBe(8)   
+    expect(a1.values).toStrictEqual([8,7,6,5,4,3,2,1])
+
+
+})
+
+
+
+test("执行任务采用对象参数中值作为优先级",async ()=>{
+    // 仅在第一个参数是{}时生效
+    let tasks = [] , count = 8 
+    let priorityThis
+    class A {      
+        values:number[] = []
+        @queue({
+            priority:"level"
+        })
+        async go(value:Record<string,any>){ 
+            this.values.push(value.level)
+            await delay(10)
+        } 
+    }
+    let a1 = new A() 
+    let args = [1,2,3,4,5,6,7,8]
+    for(let i = 0; i < count;i++){
+        tasks.push(a1.go({level:args[i]}) as unknown as QueueTask)
+    } 
+
+    let manager = queue.getManager() as QueueManager    
+    let dispatcher = manager.getDispatcher(a1,'go')
+    await dispatcher?.waitForIdle()    
+    expect(priorityThis).toBe(a1)
+    expect(a1.values.length).toBe(8)   
+    expect(a1.values).toStrictEqual([8,7,6,5,4,3,2,1])
+ 
+
+
 })

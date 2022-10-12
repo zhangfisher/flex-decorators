@@ -27,7 +27,11 @@ const logWrapper = function(method:Function,options:logOptions):Function{
 class LogManager extends DecoratorManager{
 
 }
-let log = createDecorator<logOptions>("log",{},{
+let log = createDecorator<logOptions>("log",{
+    id:0,
+    prefix:'',
+    suffix:''
+},{
     wrapper:logWrapper,
     manager:LogManager
 })
@@ -136,6 +140,36 @@ test("日志装饰器",async ()=>{
     await aa1.print("x")
     expect(logs).toStrictEqual(["Before","x","After","x"])    
 })
+test("日志装饰器只会包装一次函数",async ()=>{
+    let a1 = new A()
+    let f1 = a1.print
+    await a1.print("x")    
+    await a1.print("x")
+    let f2 = a1.print
+    expect(f1).toBe(f2)
+})
+
+test("更新装饰器参数导致重新包装函数",async ()=>{
+    class AX{
+        prefix: string = "HYT";
+        getDecoratorOptions(options:logOptions){
+            options.prefix = this.prefix
+            return options
+        }
+        @log()
+        print(info:string){
+            return info
+        }
+    }
+    let a1 = new AX()
+    await a1.print("x")
+    expect(logs).toStrictEqual(["HYT", "x"])
+    a1.prefix = "meeyi"
+    logs=[]
+    await a1.print("x")
+    expect(logs).toStrictEqual(["meeyi", "x"])
+})
+
 
 test("继承的日志装饰器",async ()=>{
     let aa1 = new AA()

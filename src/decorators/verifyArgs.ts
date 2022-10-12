@@ -1,8 +1,15 @@
 /**
  * 对输入参数进行规范化
  * 
- * @verifyArgs((args)=>{})
+ * @verifyArgs((args)=>{})      // return true/false
  * test({})
+ * 
+ * @verifyArgs([arg1,arg2,{}])         // 提供参数默认值
+ * test({})
+ * 
+   @verifyArgs({})         // 提供参数默认值
+ * test({})
+ * 
  * - 如果参数不合法，则抛出错误代码
  * - 提供参数默认值
  * - 补全缺失的参数
