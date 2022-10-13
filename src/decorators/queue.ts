@@ -143,15 +143,15 @@ export class QueueTaskDispatcher{
     #instance:object
     constructor(instance:object, method:Function, options: QueueOptions ){
         this.#instance = instance;
-        this.#options= Object.assign({
-            id:0,
-            retryCount:0,
-            retryInterval:0,
-            timeout:0,
-            length:8,
-            overflow:'slide',
-            maxQueueTime:0,
-            failure:"ignore"
+        this.#options = Object.assign({
+            id           : 0,
+            retryCount   : 0,
+            retryInterval: 0,
+            timeout      : 0,
+            length       : 8,
+            overflow     : 'slide',
+            maxQueueTime : 0,
+            failure      : "ignore"
         },options) as Required<QueueOptions>
         this.#method = method
         this.#eventemitter = new LiteEventEmitter()  
@@ -168,6 +168,7 @@ export class QueueTaskDispatcher{
     get bufferOverflow(): QueueOverflowOptions{ return this.#options.overflow} 
     get eventemitter():LiteEventEmitter{ return this.#eventemitter }
     get instance(){return this.#instance}
+    get tasks():QueueingTask[]{return this.#tasks}
 
     async _executeMethod(task:QueueingTask,timeout:number=0){
         let finalMethod = applyParams(this.#method ,...task.args)
@@ -246,31 +247,29 @@ export class QueueTaskDispatcher{
      * 取出最后一个任务，如果没有任务则等待
      */
     async pop():Promise<QueueTask>{
-        if(this.#tasks.length>0){
-            if(isFunction(this.options.priority) && this.#hasNewTask){
-                this.#hasNewTask = false;
-                try{
-                    if(isFunction(this.options.priority)){
-                        this.#tasks = (this.options.priority as Function).call(this.#instance,this.#tasks)
-                    }else if(typeof(this.options.priority)=='string'){
-                        const sortKey = this.options.priority
-                        const sortOrder =  String(this.options.priority).startsWith("-") ? 'desc' : 'asc'
-                        this.#tasks =this.#tasks.sort((task1,task2) => {
-                            let arg1 = typeof(task1.args[0]) =='object' ?  task1.args[0][sortKey] : task1.args[0]
-                            let arg2 = typeof(task2.args[0]) =='object' ?  task2.args[0][sortKey] : task2.args[0]
-                            return sortOrder == 'desc' ? arg1 - arg2 : arg2 - arg1                       
-                        })
-                    }else if(typeof(this.options.priority)=='number'){
+        if(this.#tasks.length==0) await this.#waitForTask()
+        // 有新任务进来时才进行重新排序
+        if(this.#hasNewTask){
+            this.#hasNewTask = false;
+            try{
+                if(isFunction(this.options.priority)){
+                    this.#tasks = (this.options.priority as Function).call(this.#instance,this.#tasks)
+                }else if(typeof(this.options.priority)=='string'){
+                    const sortOrder =  String(this.options.priority).startsWith("-") ? 'desc' : 'asc'
+                    const sortKey = this.options.priority.replace("+","").replace("-","")                    
+                    this.#tasks =this.#tasks.sort((task1,task2) => {
+                        let arg1 = typeof(task1.args[0]) =='object' ?  task1.args[0][sortKey] : task1.args[0]
+                        let arg2 = typeof(task2.args[0]) =='object' ?  task2.args[0][sortKey] : task2.args[0]
+                        return sortOrder == 'asc' ? arg1 - arg2 : arg2 - arg1                       
+                    })
+                }else if(typeof(this.options.priority)=='number'){
 
-                    }                
-                }catch(e){
+                }                
+            }catch(e){
 
-                }
-            }
-            return this.#tasks.shift() as QueueTask;
+            } 
         }
-        // 等待新任务的到来
-        return await this.#waitForTask()
+        return this.#tasks.shift() as QueueTask;        
     }
     stop(){
         this.#running =false
@@ -401,12 +400,13 @@ export class QueueManager extends DecoratorManager{
     /**
      * 获取执行器，如果不存在则创建
      * @param instance 
-     * @param executorId 
      */
     getAndCreateDispatcher(instance: object,method:Function,options:QueueOptions):QueueTaskDispatcher{
         let dispatcherId = options.id || ''
         if(this.hasDispatcher(instance,dispatcherId)){
-            return this.getDispatcher(instance,dispatcherId) as QueueTaskDispatcher 
+            let dispatcher =  this.getDispatcher(instance,dispatcherId) as QueueTaskDispatcher 
+            Object.assign(dispatcher.options,options)
+            return dispatcher
         }else{
             return this.createDispatcher(instance,method,options) 
         }

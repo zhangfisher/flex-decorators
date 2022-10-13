@@ -130,6 +130,84 @@ export function applyParams(fn:Function,...params:any[]):AsyncFunction | Functio
     }
 }
  
+/**
+ * 判断是否是JSON对象
+ * @param {*} obj 
+ * @returns 
+ */
+export function isPlainObject(obj:any):boolean {
+    if (typeof obj !== 'object' || obj == undefined) return false;
+    if(Array.isArray(obj)) return false;
+
+    var proto = Object.getPrototypeOf(obj);
+    if (proto === null) return true;
+    var baseProto = proto;
+    while (Object.getPrototypeOf(baseProto) !== null) {
+        baseProto = Object.getPrototypeOf(baseProto);
+    }
+    return proto === baseProto; 
+}
+/**
+ * 简单进行对象合并
+ * 
+ * options={
+ *    array:0 ,        // 数组合并策略，0-替换，1-合并，2-去重合并
+ * }
+ * 
+ * @param {*} toObj 
+ * @param {*} formObj 
+ * @returns 合并后的对象
+ */
+ export function deepMerge(toObj:object, formObj:object,options:{array?: 0 | 1 | 2}={array:2}){
+    let results:Record<string,any> = Object.assign({},toObj)
+    Object.entries(formObj).forEach(([key,value])=>{
+        if(key in results){
+            if(typeof value === "object" && value !== null){
+                if(Array.isArray(value)){
+                    if(options.array === 0){
+                        results[key] = value
+                    }else if(options.array === 1){
+                        results[key] = [...results[key],...value]
+                    }else if(options.array === 2){
+                        results[key] = [...new Set([...results[key],...value])]
+                    }
+                }else{
+                    results[key] = deepMerge(results[key],value,options)
+                }
+            }else{
+                results[key] = value
+            }
+        }else{
+            results[key] = value
+        }
+    })
+    return results
+}
+
+/**
+ * 将fromArray中的对应项替换toArray中的符合条件的对应项
+ * 
+ * - 如果toArray中的对应项是undefined则使用fromArray中的对应项替换
+ * - 如果toArray中的对应项不存在使用fromArray中的对应项替换
+ * - 如果toArray和fromArray中的对应项是{}，则使用fromArray中的对应项混入
+ * 
+ * @param toArray 
+ * @param fromArray 
+ */
+export function mixinArray(toArray: any[],fromArray: any[]){
+    fromArray.forEach((value: any,index:number) =>{
+        if(index < toArray.length){
+            if(toArray[index]===undefined){
+                toArray[index] = value
+            }else if(isPlainObject(toArray[index]) && isPlainObject(value)){
+                toArray[index] = deepMerge(toArray[index],value)
+            }
+        }else{
+            toArray.push(value)
+        }
+    })
+    return toArray
+}
 
 /**
  * 首字符大写

@@ -1,7 +1,7 @@
 import { expect, test, beforeEach,beforeAll } from 'vitest'
 import { delay } from "../src/utils"
 import {
-    queue,IQueueDecoratorOptionsReader,QueueTask,QueueManager
+    queue,IQueueDecoratorOptionsReader,QueueTask,QueueManager, QueueOptions
 } from "../src/decorators/queue"
 
  
@@ -203,9 +203,14 @@ test("执行任务采用优先级函数",async ()=>{
 test("执行任务采用对象参数中值作为优先级",async ()=>{
     // 仅在第一个参数是{}时生效
     let tasks = [] , count = 8 
-    let priorityThis
+    let manager = queue.getManager() as QueueManager    
     class A {      
         values:number[] = []
+        priority:string = "level"
+        getDecoratorOptions(options:QueueOptions){
+            options.priority =  this.priority
+            return options
+        }
         @queue({
             priority:"level"
         })
@@ -216,17 +221,29 @@ test("执行任务采用对象参数中值作为优先级",async ()=>{
     }
     let a1 = new A() 
     let args = [1,2,3,4,5,6,7,8]
+
+    // 升序
+    a1.priority = "level"
     for(let i = 0; i < count;i++){
         tasks.push(a1.go({level:args[i]}) as unknown as QueueTask)
     } 
 
-    let manager = queue.getManager() as QueueManager    
     let dispatcher = manager.getDispatcher(a1,'go')
     await dispatcher?.waitForIdle()    
-    expect(priorityThis).toBe(a1)
+    expect(a1.values.length).toBe(8)   
+    expect(a1.values).toStrictEqual([1,2,3,4,5,6,7,8])
+
+    // 降序
+    a1.values = []
+    a1.priority = "-level"
+
+    for(let i = 0; i < count;i++){
+        tasks.push(a1.go({level:args[i]}) as unknown as QueueTask)
+    } 
+    dispatcher = manager.getDispatcher(a1,'go')
+    await dispatcher?.waitForIdle()    
     expect(a1.values.length).toBe(8)   
     expect(a1.values).toStrictEqual([8,7,6,5,4,3,2,1])
- 
-
 
 })
+

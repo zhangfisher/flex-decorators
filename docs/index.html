@@ -7,6 +7,28 @@
   <meta name="description" content="Description">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
   <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <!-- <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/sidebar.min.css" /> -->
+<style>
+    .app-nav{
+        position: fixed;
+        top: 0;
+        left: 300px;        
+        right: 0;
+        height: 51px;
+        margin: 0;
+        padding: 8px;
+        padding-right: 64px;
+        /* color: #fff; */
+        /* z-index: 0; */
+        border-bottom: 1px solid #ddd;
+    }
+    .github-corner svg{
+        width:50px;
+        top:0px; 
+        margin-top:-15px;
+    } 
+
+</style>
 </head>
 <body>         
   <div id="app"></div>
@@ -16,11 +38,20 @@
       loadNavbar  : true,
       repo        : 'https://github.com/zhangfisher/flex-decorators',
       relativePath: true,
+      search: 'auto', 
       coverpage   : true,
-      onlyCover   : true
+      onlyCover   : true,
+      loadSidebar : true,
+      subMaxLevel : 5,
+      sidebarDisplayLevel:5
     }
   </script>
   <!-- Docsify v4 -->
   <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
+  <!-- <script src="//cdn.jsdelivr.net/npm/docsify-sidebar-collapse/dist/docsify-sidebar-collapse.min.js"></script> -->
+
 </body>
 </html>

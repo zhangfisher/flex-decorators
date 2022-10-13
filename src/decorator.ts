@@ -40,9 +40,9 @@ export interface DecoratorOptions {
     enable?: boolean                            // 是否启用或关闭装饰器
 }
 
-type TypedMethodDecorator<T> = (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
+export type TypedMethodDecorator<T> = (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
 
-interface DecoratorCreator<T,M,D> {
+export interface DecoratorCreator<T,M,D> {
     (options?:T | D):TypedMethodDecorator<M> 
     createManagerDecorator<X extends DecoratorManager,O extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<X,O>
     getManager():DecoratorManager | undefined
@@ -60,8 +60,10 @@ export type DecoratorManagerCreateOptions = DecoratorManagerCreateFinalOptions |
 
 export interface createDecoratorOptions<T,M>{
     wrapper?:DecoratorMethodWrapper<T,M>
-    singleton?:boolean                      // 指定方法上是否只能一个该装饰器,如果重复使用则会出错
+    singleton?:boolean                      // 指定方法上是否只能一个该装饰器,如果重复使用则会出错    
     defaultOptionKey?:string                // 默认配置参数的字段名称,当只提供一个参数时,视为该字段值,如retry(10)=={count:10}
+    // 当装饰器的默认参数是一个{}时，传入{}就会存在岐义，比如verifyArgs的defaultOptionKey='validate"
+    // 由于verifyArgs.validate可以是{},这样当使用@vertifyArgs({})时就无法区分传入的默认参数，还是完整装饰器参数，此时就需要额外进行标识
     autoReWrapper?: boolean                 // 当检测到装饰器参数发生变化时自动重新包装被装饰函数，以便使新的装饰器参数重新生效 
     manager?:DecoratorManagerCreateOptions
     asyncWrapper?: boolean | 'auto'         // 异步包装函数,auto=根据被包装函数决定来决定
@@ -274,6 +276,7 @@ function useCommonDecoratorWrapper<T extends DecoratorOptions,M>(decoratorContex
                     return result
                 }catch(e : any){
                     executeDecoratorHook.call(this,manager,"onAfterCall",methodContext,decoratorContext,[e])
+                    throw e
                 }                
             }else{
                 return (oldMethod as Function).apply(this,arguments)
@@ -296,6 +299,7 @@ function useCommonDecoratorWrapper<T extends DecoratorOptions,M>(decoratorContex
                     return result
                 }catch(e : any){
                     executeDecoratorHook.call(this,manager,"onAfterCall",methodContext,decoratorContext,e)
+                    throw e
                 }     
             }else{
                 return (oldMethod as Function).apply(this,arguments)
@@ -319,7 +323,15 @@ function handleDecoratorOptions<T>(decoratorContext:DecoratorContext,methodConte
     let finalOptions = Object.assign({},defaultOptions || {},managerDecoratorOptions)  
 
     if(typeof(options)=="object"){
-        Object.assign(finalOptions,options as T)
+        // 如果装饰器只有一个时，如果传入{}中的键与默认不一样，则视为是给默认装饰器参数赋值
+        if(createOptions?.defaultOptionKey 
+            && Object.keys(defaultOptions).length===1 
+            && !(createOptions?.defaultOptionKey in options!)
+        ){
+            (finalOptions as any)[createOptions?.defaultOptionKey] = options 
+        }else{
+            Object.assign(finalOptions,options as T)
+        }
     }else{
         if(createOptions?.defaultOptionKey && options!==undefined){
             (finalOptions as any)[createOptions?.defaultOptionKey] = options 
