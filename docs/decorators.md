@@ -2,5 +2,24 @@
 
 ## timeout
 
-## noReenter
- 
+## retry
+
+## debounce
+
+## throttle
+
+## memorize
+
+##  noReentry
+
+## reliable
+
+## deprecate
+
+## verifyArgs
+
+## queue
+
+## cache
+
+
