@@ -10,5 +10,17 @@
 - 使函数传入参数进行Hash后作为缓存键
 - 支持各种缓存后端
 
-## 第一步：
+## 第一步：创建装饰器
+
+```typescript
+import { createDecorator  } from "flex-decorators"
+
+
+export cache = createDecorator("cache",{})
+
+```
+
+
+
+
 
