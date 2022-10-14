@@ -11,19 +11,38 @@
     .app-nav{
         position: fixed;
         top: 0;
-        left: 300px;        
+        left: 0;        
         right: 0;
+        background: white;
         height: 51px;
         margin: 0;
         padding: 8px;
         padding-right: 64px;
         border-bottom: 1px solid #ddd;
     }
+    .app-nav>ul{
+        width:100%;
+        padding-left:12px;
+    }
+    .app-nav>ul>li:first-child{
+        float: left;
+        margin: 0;        
+        color:#42b983;
+        margin-left: 0px;
+        margin-top: -6px;;
+        font-size: 24px;
+        font-weight: bold;
+    } 
+    .app-nav>ul>li:first-child>a{border:0px;}
+    .github-corner{
+        width:50px;
+        top:0px;         
+        z-index: 999;
+    } 
     .github-corner svg{
         width:50px;
-        top:0px; 
         margin-top:-15px;
-    } 
+    }
 
 </style>
 </head>
@@ -40,13 +59,42 @@
       onlyCover   : true,
       loadSidebar : true,
       subMaxLevel : 5,
-      sidebarDisplayLevel:5
+      sidebarDisplayLevel:5,
+      plugins: [
+    function(hook, vm) {
+      hook.afterEach(function(html, next) {
+        // 解析成 html 后调用。
+        // beforeEach 和 afterEach 支持处理异步逻辑
+        // ...
+        // 异步处理完成后调用 next(html) 返回结果
+        next(html);
+      });
+      hook.mounted(function() {
+        // 初始化并第一次加载完成数据后调用，只触发一次，没有参数。
+
+        
+      });
+    //   hook.doneEach(function() {
+    //     // 每次路由切换时数据全部加载完成后调用，没有参数。
+    //     let navbar = document.querySelector("nav.app-nav");
+    //     let appname = document.querySelector("h1.app-name");
+    //     console.log(appname,navbar)
+    //     navbar.insertBefore(appname,navbar.childNodes[1])
+    //   });
+      hook.ready(()=>{
+        //let navbar = document.querySelector("nav.app-nav");
+        let appname = document.querySelector("h1.app-name");
+        if(appname) appname.remove()
+      })
+    }
+  ]
     }
   </script>
   <!-- Docsify v4 -->
   <script src="//cdn.jsdelivr.net/npm/docsify@4"></script>
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/zoom-image.min.js"></script>
+  <script src="//cdn.jsdelivr.net/npm/prismjs@1/components/prism-typescript.min.js"></script>
   <script src="//cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
 </body>
-</html>
+</html> 

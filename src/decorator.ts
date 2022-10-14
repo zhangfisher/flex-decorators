@@ -143,7 +143,7 @@ function getDecoratorManager(this:any,decoratorContext:DecoratorContext,methodCo
     //   - 传入的管理器实例
     //   - 根据传入的manager参数来自动创建管理器
     //   - 如果传入manager参数是一个函数，则该函数应该返回一个DecoratorManager类或实例
-    // 如果autoStartManager=false，则不会创建管理器,开发者只能自己创建和启动管理器,
+    // 如果autoStart=false，则不会创建管理器,开发者只能自己创建和启动管理器,
     // 开发者自己创建和启动管理器能更好地控制管理器实例化和启动的时机
     if(!managerInstance || !(managerInstance instanceof DecoratorManager)){
         // 如果管理器实例已经创建，则返回已经创建的实例                
@@ -402,14 +402,14 @@ function createDecoratorManager(decoratorName: string,managerOptions: DecoratorM
  * })
  *   
  *  泛型：
- *    T: 装饰器参数
- *    M: 被装饰的函数签名
- *    D: 默认装饰器参数值类型
+ *    OPTIONS: 装饰器参数
+ *    METHOD: 被装饰的函数签名
+ *    DEFAULT_OPTION: 默认装饰器参数值类型
  * 
  */
  
-export function createDecorator<T extends DecoratorOptions,METHOD=any,D=any>(decoratorName:string,defaultOptions?:T,opts?:createDecoratorOptions<T,METHOD>): DecoratorCreator<T,METHOD,D>{
-    let createOptions:createDecoratorOptions<T,METHOD> = Object.assign({
+export function createDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFAULT_OPTION=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createDecoratorOptions<OPTIONS,METHOD>): DecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>{
+    let createOptions:createDecoratorOptions<OPTIONS,METHOD> = Object.assign({
         singleton:true,
         autoReWrapper:true,
         asyncWrapper:'auto'
@@ -444,7 +444,7 @@ export function createDecorator<T extends DecoratorOptions,METHOD=any,D=any>(dec
     } 
 
     // T:装饰器参数,D:装饰器默认值的类型
-    function decorator(options?: T | D ):TypedMethodDecorator<METHOD> {        
+    function decorator(options?: OPTIONS | DEFAULT_OPTION ):TypedMethodDecorator<METHOD> {        
         return function(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<METHOD>):TypedPropertyDescriptor<METHOD> | void {            
             // 当前装饰方法的上下文对象,
             let methodContext:DecoratorMethodContext= {
@@ -459,13 +459,13 @@ export function createDecorator<T extends DecoratorOptions,METHOD=any,D=any>(dec
                 || isAsyncFunction((target as any)[`getDecoratorOptions}`]) 
 
             // 1. 处理装饰器参数：
-            handleDecoratorOptions<T>(decoratorContext,methodContext,options as T)        
+            handleDecoratorOptions<OPTIONS>(decoratorContext,methodContext,options as OPTIONS)        
             // 2. 定义元数据, 如果多个装饰器元数据会合并后放在数组中
-            defineDecoratorMetadata<T>(decoratorContext,methodContext)     
+            defineDecoratorMetadata<OPTIONS>(decoratorContext,methodContext)     
 
             // 3.对被装饰方法函数进行包装
             if(typeof opts?.wrapper=="function"){
-                descriptor.value = useCommonDecoratorWrapper<T,METHOD>(decoratorContext,methodContext,<METHOD>descriptor.value)                
+                descriptor.value = useCommonDecoratorWrapper<OPTIONS,METHOD>(decoratorContext,methodContext,<METHOD>descriptor.value)                
             }   
             return descriptor            
         };         

@@ -97,15 +97,6 @@ export function getDecorators(instance: any,decoratorName?:string,options?:{cach
     return decoratorName ? (metadatas[decoratorName]  as DecoratedMethodList): (metadatas as DecoratorList)
 } 
 
-
-interface IDecoratorManager{
-    get running(): boolean         
-    onStart(...args: any[]):Awaited<Promise<any>>
-    onStop(...args: any[]): Awaited<Promise<any>>
-    start(timeout?:number): Awaited<Promise<any>>
-    stop(): Awaited<Promise<any>>
-}
-
 export interface DecoratorManagerOptions{
     enable?:boolean                                     // 是否启用/禁用装饰器，对作用域下的所有装饰器起作用
     scope?: 'class' | 'instance' | 'global'             // 管理器作用域
@@ -136,7 +127,7 @@ export interface IDecoratorManagerHook {
 /**
  * 装饰器管理器基类
  */
-export class DecoratorManager implements IDecoratorManager{    
+export class DecoratorManager{    
     #decoratorName:string = ""                                              // 装饰器名称
     #options:DecoratorManagerOptions 
     #status: DecoratorManagerStatus = DecoratorManagerStatus.INITIAL        // 状态
@@ -149,8 +140,7 @@ export class DecoratorManager implements IDecoratorManager{
             enable:true,
             scope:'global',
             defaultDecoratorOptions:{}
-        },options)
-    
+        },options)    
     }    
     get options():DecoratorManagerOptions{ return this.#options}
     get enable():boolean{ return this.#options.enable==undefined ? true : this.#options.enable  }
@@ -303,18 +293,4 @@ export interface ManagerDecoratorCreator<T,O extends DecoratorManagerOptions>{
         }
     }    
 }
-
-
-/**
- * 为类注入一个访问装饰器管理器的变量
- * 
- * class MyClass{
- *  @cacheManager()
- *  manager:CacheManager 
- * }
- * 
- */
- function createManagerInjector<T extends DecoratorManagerOptions>(options:T){
-    
-    
-}
+ 
