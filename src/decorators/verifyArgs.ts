@@ -22,7 +22,7 @@
 import { deepMerge, isAsyncFunction, isPlainObject, mixinArray } from "../utils"
  
  export interface VerifyArgsOptions extends DecoratorOptions { 
-    validate?:(this:any,args: any[]) => any | [] | Record<string | symbol, any> | undefined         // 应该返回规范化后的参数
+    validate?:(args: any[]) => any | [] | Record<string | symbol, any> | undefined         // 应该返回规范化后的参数
  }
  export interface IVerifyArgsDecoratorOptionsReader {
      getVerifyArgsDecoratorOptions(options:VerifyArgsOptions,methodName:string | symbol,decoratorName:string):VerifyArgsOptions
@@ -43,6 +43,8 @@ import { deepMerge, isAsyncFunction, isPlainObject, mixinArray } from "../utils"
                             }else{
                                 verifiedArgs = args
                             }
+                        }else if(!Array.isArray(verifiedArgs)){
+                            verifiedArgs = [verifiedArgs]
                         }
                     }                        
                     return await method.apply(this,verifiedArgs)
@@ -58,6 +60,8 @@ import { deepMerge, isAsyncFunction, isPlainObject, mixinArray } from "../utils"
                             }else{
                                 verifiedArgs = args
                             }
+                        }else if(!Array.isArray(verifiedArgs)){
+                            verifiedArgs = [verifiedArgs]
                         }
                     }                        
                     return method.apply(this,verifiedArgs)

@@ -6,14 +6,14 @@
  
 
  */
-import { createDecorator, DecoratorContext, DecoratorMethodContext } from "../decorator"
+import { createDecorator  } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
 import type {AllowNull, AsyncFunction } from "../types"
-import {DecoratorManager,  DecoratorManagerOptions,  IDecoratorManagerHook } from "../manager"
+import {DecoratorManager,  DecoratorManagerOptions  } from "../manager"
 import { asyncSignal,IAsyncSignal } from "../asyncSignal"
 import { applyParams, delay,  isFunction } from "../utils"
 import timeoutWrapper from "../wrappers/timeout"
-import { LiteEventEmitter } from "../LiteEventEmitter"
+import { LiteEventEmitter } from "../liteEventEmitter"
 
 export type QueueFailureBehaviour  = "ignore" | "retry" | "requeue"
 export type QueueOverflowOptions = 'discard' | 'overlap' | 'slide' 
@@ -95,9 +95,9 @@ export class QueueTask{
      */ 
     async done(){
         if(this.#status==QueueTaskStatus.Done) return
-        return new Promise<void>((resolve)=>{
+        return new Promise<any>((resolve)=>{
             this.executor.once(`${this.id}:done`,()=>{
-                resolve()
+                resolve(this.#returns)
             })
         })
     } 
@@ -113,6 +113,9 @@ export class QueueTask{
     }
     once(callback:Function){
         this.executor.once(`${this.id}:done`,callback)
+    }
+    cancel(){
+        this.#status == QueueTaskStatus.Cancelled
     }
 }
 

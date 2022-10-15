@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { DecoratorManager, createManagerDecorator   } from './manager';
 import { isDiff,pick,isClass,firstUpperCase,isAsyncFunction, setObjectDefaultValue } from "./utils"
 import type {ManagerDecoratorCreator,DecoratorManagerOptions}  from "./manager"
-import type { Constructor } from "./types"
+import type { Constructor, LimitReturnFunction } from "./types"
 
 
 
@@ -52,11 +52,11 @@ export interface DecoratorCreator<T,M,D> {
 export type DecoratorManagerCreateFinalOptions = {
     autoStart?:boolean                              // 是否启动装饰器管理器，当第一次调用时会实例化管理器，如果=false，则管理器需要由开发者自行初始化并启动
     initial?:'demand' | 'once'                      // 决定什么时候实例化管理器，once=立刻实例化, demand=按需实例化, manual
-    creator?:DecoratorManager | Function | typeof DecoratorManager    
+    creator?:DecoratorManager | (typeof DecoratorManager) | LimitReturnFunction<DecoratorManager|typeof DecoratorManager>    
     defaultOptions?:Record<string,any>              // 传递给管理器实例的默认构造参数
 }
 
-export type DecoratorManagerCreateOptions = DecoratorManagerCreateFinalOptions | (DecoratorManager | Function | typeof DecoratorManager) | undefined
+export type DecoratorManagerCreateOptions = DecoratorManagerCreateFinalOptions | (DecoratorManager | (typeof DecoratorManager) | LimitReturnFunction<DecoratorManager|typeof DecoratorManager>) | undefined
 
 export interface createDecoratorOptions<T,M>{
     wrapper?:DecoratorMethodWrapper<T,M>

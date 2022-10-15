@@ -40,8 +40,6 @@ export function isClass(cls: any):boolean {
     }
     return result;
 }
-
-
 /**
  * 提供对象中的指定健值
  * @param obj 

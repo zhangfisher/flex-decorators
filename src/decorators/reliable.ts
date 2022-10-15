@@ -10,6 +10,7 @@ export interface ReliableOptions extends DecoratorOptions {
     debounce        : number,                            // 去抖动
     throttle        : number,                            // 节流
     noReentry       : boolean,                           // 不可重入
+    memorize        : ((args: any[]) => string) | 'length' | boolean  // 记住函数执行结果
 }
 
 export interface IReliableDecoratorOptionsReader {
@@ -24,6 +25,7 @@ export const reliable = createDecorator<ReliableOptions>("reliable",
         debounce     : 0,                            // 去抖动
         throttle     : 0,                            // 节流
         noReentry    : false,                        // 不可重入
+        memorize     : false,                    // 记住函数执行结果 
     },{
     wrapper: function(method:AsyncFunction,options:ReliableOptions):AsyncFunction{
         return reliableWrapper(method,options)

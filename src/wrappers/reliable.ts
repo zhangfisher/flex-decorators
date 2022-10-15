@@ -5,6 +5,7 @@ import timeout from "./timeout"
 import retry from "./retry"
 import debounce from "./debounce"
 import throttle from "./throttle"
+import memorize from './memorize';
 
 /**
  *
@@ -19,6 +20,7 @@ type reliableOptions={
     debounce        : number,                            // 去抖动
     throttle        : number,                            // 节流
     noReentry       : boolean,                           // 不可重入
+    memorize        :  ((args: any[]) => string) | 'length' | boolean
 }
 
 export default function reliable(fn:AsyncFunction,options:reliableOptions):AsyncFunction{
@@ -28,12 +30,13 @@ export default function reliable(fn:AsyncFunction,options:reliableOptions):Async
         retryInterval   : 1000,                         // 重试间隔
         debounce        : 0,                            // 去抖动
         throttle        : 0,                            // 节流
-        noReentry       : false                         // 不可重入
+        noReentry       : false,                        // 不可重入
+        memorize        : false
     },options)
     
     if(opts.timeout===0 && opts.retryCount===0 && opts.debounce===0 && opts.throttle===0 && opts.noReentry==false) return fn
     //
-    let wrappedFn = applyParams(fn,...[...arguments].slice(2))
+    let wrappedFn = applyParams(fn,...[...arguments].slice(2)) as AsyncFunction
     // 不可重入 
     if(opts.noReentry){
         wrappedFn = noReentry(wrappedFn)
@@ -54,5 +57,10 @@ export default function reliable(fn:AsyncFunction,options:reliableOptions):Async
     if(opts.throttle>0 ){
         wrappedFn = throttle(wrappedFn,{interval:opts.throttle, noTrailing:true}) as unknown as AsyncFunction
     }
+
+    if(opts.memorize!==undefined && opts.memorize!==false) {
+        wrappedFn = memorize(fn, {hash:opts.memorize}) as AsyncFunction
+    }
+
     return wrappedFn
 }

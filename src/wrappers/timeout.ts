@@ -1,6 +1,13 @@
 
 import type { AsyncFunction } from "../types";
  
+
+export class TimeoutError extends Error {
+    constructor(){
+        super('TIMEOUT')
+    }
+}
+
 /**
  * 包装异步函数，使之具备超时能力,当超时时会触发TIMEOUT错误
  * 当执行超过times时会触发异常
@@ -15,7 +22,7 @@ import type { AsyncFunction } from "../types";
             let result
             let timerId = setTimeout(()=>{
                 if(options.default==undefined){
-                    reject(new Error("TIMEOUT"))
+                    reject(new TimeoutError())
                 }else{
                     resolve(options.default)
                 }
@@ -25,7 +32,7 @@ import type { AsyncFunction } from "../types";
                 resolve(result)
             }catch(e){
                 if(options.default==undefined){
-                    reject(new Error("TIMEOUT"))
+                    reject(new TimeoutError())
                 }else{
                     resolve(options.default)
                 }

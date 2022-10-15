@@ -23,11 +23,11 @@
 
 import { createDecorator } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
-import { isAsyncFunction   } from "../utils"
+import memorizeWrapper from "../wrappers/memorize"
 
 export interface MemorizeOptions extends DecoratorOptions { 
     // 根据参数计算hash值的函数 | length=参数个数 | undefined=永远返回最近的值
-    hash?: ((args: any[]) => string) | 'length' | undefined  
+    hash?: ((args: any[]) => string) | 'length' | boolean  
     expires?:number                             // 有效时间，当超过后失效 
 }
 export interface IMemorizeDecoratorOptionsReader {
@@ -36,36 +36,7 @@ export interface IMemorizeDecoratorOptionsReader {
 
 export const memorize = createDecorator<MemorizeOptions>("memorize",{hash:undefined,expires:0},{
     wrapper: function(method:Function,options:MemorizeOptions):Function{
-        let result:any
-        let preHash:string | undefined
-        let timestamp :number = 0
-        const getHash=function(this:any,args: any[]){
-            return options.hash == 'length' ? String(args.length) : (typeof options.hash == 'function' ? options.hash.call(this,args) : undefined )
-        }
-        const isInvalid = (hash: string | undefined):boolean => result===undefined || (hash!=undefined && hash!=preHash) || (options.expires && options.expires>0 && timestamp>0 && (Date.now() - timestamp)> options.expires) as boolean
-
-        if(isAsyncFunction(method)){
-            return async function(this:any,...args:any[]){
-                let hash = getHash.call(this,args)
-                if(isInvalid(hash)){
-                    result =await method.apply(this,args)
-                    timestamp = Date.now()
-                    preHash = hash
-                }
-                return result
-            }
-        }else{
-            return function(this:any,...args:any[]){
-                let hash = getHash.call(this,args)
-                if(isInvalid(hash)){
-                    result = method.apply(this,args)
-                    timestamp = Date.now()
-                    preHash = hash
-                }
-                return result
-            }
-        }
-        
+         return memorizeWrapper.call(this,method,options);        
     },
     defaultOptionKey:"hash"
 })
