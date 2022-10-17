@@ -159,7 +159,6 @@ export function asyncSignal(constraint?:Function,options:{timeout:number}={timeo
   *
   *  let signals = new AsyncSignalManager({
   *      timeout:60 * 1000,               // 所有信号均在1分钟后自动超时，0代表不设超时，并且此值应该大于signal(timeout)时指定的超时值
-  *      abortSignal:"/mqtt/destroy"      // 在总线上侦听到此信号后，会自动销毁所有的异步信号
   *  })
   *
   *  signal = signals.create() 创建一个asyncSignal

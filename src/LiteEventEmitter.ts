@@ -98,7 +98,7 @@ export class LiteEventEmitter{
     }
     async emitAsync(this:any,event:string,...args:any[]){
         const listeners  = this.getListeners(event)        
-        let results = await Promise.allSettled(listeners) 
+        let results = await Promise.allSettled(listeners.map((listener:Function) =>listener.apply(this,args))) 
         this._updateListenerCounter(event)
         return results
     }
