@@ -25,10 +25,11 @@ export default defineConfig({
     ],
     banner: {
         js: `/**
+*        
 *   ---=== FlexDecorators ===---
 *   https://zhangfisher.github.com/flex-decorators
 * 
 *   提供功能与包装逻辑分离的动态装饰器开发实践
-*/ 
-  `}
+*
+*/`}
 }) 

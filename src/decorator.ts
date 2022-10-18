@@ -379,7 +379,7 @@ function defineDecoratorMetadata<T>(decoratorContext:DecoratorContext,methodCont
  * @returns 
  */
 function createDecoratorManager(decoratorName: string,managerOptions: DecoratorManagerCreateFinalOptions): DecoratorManager | undefined {    
-    if(!managerOptions) return     
+    if(!managerOptions) return
     let manager, creator = managerOptions.creator
     if(typeof creator == 'function' && !isClass(creator)){
         creator = (managerOptions as Function)()
@@ -388,7 +388,7 @@ function createDecoratorManager(decoratorName: string,managerOptions: DecoratorM
         manager = new (managerOptions.creator as Constructor)(decoratorName,managerOptions.defaultOptions)
     }else if(managerOptions.creator instanceof DecoratorManager){
         manager = managerOptions.creator
-    }     
+    }
     return manager
 }
 

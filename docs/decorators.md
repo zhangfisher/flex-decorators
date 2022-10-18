@@ -6,7 +6,10 @@
 
 当执行被装饰方法出错时，触发`TimeoutError`。
 
+> import { timeout,TimeoutOptions,ITimeoutDecoratorOptionsReader } from "flex-decorators/timeout"
+
 ```typescript
+
 export interface TimeoutOptions extends DecoratorOptions {
     value?  : number,                   // 超时时间
     default?: any                       // 如果提供则返回该默认值而不是触发错误
@@ -24,6 +27,8 @@ export interface ITimeoutDecoratorOptionsReader {
 ## retry
 
 当执行被装饰方法执行出错时，根据配置进行重试执行。
+
+> import { retry,RetryOptions,IRetryDecoratorOptionsReader } from "flex-decorators/retry"
 
 ```typescript
 
@@ -43,11 +48,18 @@ export interface IRetryDecoratorOptionsReader {
 
 使用被装饰的方法具备去抖动执行功能，封装自`throttle-debounce`。
 
+> import { debounce,DebounceOptions,IDebounceDecoratorOptionsReader } from "flex-decorators/debounce"
+
 ```typescript
+
 export interface DebounceOptions extends DecoratorOptions { 
     interval:number, 
     atBegin?:boolean
 }
+export interface IDebounceDecoratorOptionsReader {
+    getDebounceDecoratorOptions(options:DebounceOptions,methodName:string | symbol,decoratorName:string):DebounceOptions
+}
+
 ```
 
 - 默认参数是重试次数`interval`
@@ -58,7 +70,10 @@ export interface DebounceOptions extends DecoratorOptions {
 
 使用被装饰的方法具备去节流功能，封装自`throttle-debounce`。
 
+> import { throttle,ThrottleOptions,IThrottleDecoratorOptionsReader } from "flex-decorators/throttle"
+
 ```typescript
+
 export interface ThrottleOptions extends DecoratorOptions { 
     interval     : number,
     noLeading?   : boolean,
@@ -77,8 +92,10 @@ export interface IThrottleDecoratorOptionsReader {
 
 记住被装饰方法执行结果，再次执行返回上一次执行结果。
 
+> import { memorize,MemorizeOptions,IMemorizeDecoratorOptionsReader } from "flex-decorators/memorize"
 
 ```typescript
+
 export interface MemorizeOptions extends DecoratorOptions { 
     // 根据参数计算hash值的函数 | length=参数个数 | boolean=永远返回最近的值或者无效
     hash?: ((args: any[]) => string) | 'length' | boolean  
@@ -99,7 +116,10 @@ export interface IMemorizeDecoratorOptionsReader {
 
 避免被装饰函数重复执行。
 
+> import { noReentry,NoReentryOptions,INoReentryDecoratorOptionsReader } from "flex-decorators/noReentry"
+
 ```typescript
+
 export interface NoReentryOptions extends DecoratorOptions { 
     silence?:boolean           // 默认true,当重入时默默地返回,=false时会触发错误
 }
@@ -113,7 +133,11 @@ export interface INoReentryDecoratorOptionsReader {
 
 该装饰器可以同时提供`timeout`、`retry`、`debounce`、`throttle`、`noReentry`、`memorize`这几个装饰器组合的功能。
 
+> import { reliable,ReliableOptions,IReliableDecoratorOptionsReader } from "flex-decorators/reliable"
+
 ```typescript
+
+
 export interface ReliableOptions extends DecoratorOptions { 
     timeout         : number,                            // 执行失败超时,默认为1分钟
     retryCount      : number,                            // 重试次数
@@ -136,7 +160,10 @@ export interface IReliableDecoratorOptionsReader {
 
 当执行被装饰方法时，在控制台输出废弃警告信息。
 
+> import { deprecate,DeprecateOptions } from "flex-decorators/deprecate"
+
 ```typescript
+
 export interface DeprecateOptions extends DecoratorOptions { 
     tips?: string,          // 额外的提示信息
     url?: string            // 额外的网站地址
@@ -147,7 +174,10 @@ export interface DeprecateOptions extends DecoratorOptions {
 
 对当执行被装饰方法时，对传入的参数进行校验和提供默认值。
 
+> import { verifyArgs,VerifyArgsOptions,IVerifyArgsDecoratorOptionsReader } from "flex-decorators/verifyArgs"
+
 ```typescript
+
 export interface VerifyArgsOptions extends DecoratorOptions { 
     validate?:(args: any[]) => any | [] | Record<string | symbol, any> | undefined         // 应该返回规范化后的参数
 }
@@ -221,6 +251,8 @@ my.getUsers(100,200,300,{name:"bob"}) //  ==>  100 200 300 bob 100
 - 任务跟踪
 
 ### 类型接口
+
+> import { queue,QueueOptions,IQueueDecoratorOptionsReader } from "flex-decorators/queue"
 
 ```typescript
 export type QueueFailureBehaviour  = "ignore" | "retry" | "requeue"

@@ -6,9 +6,30 @@
 
 开发中经常碰到需要在某些异步任务完成后做点什么的场景，`asyncSignal`用来创建一个异步信号，可以侦听该异步信号的`resolve/reject`，其本质上是对`Promise`的简单封装。
 
-### 基本使用
+```typescript
+import {asyncSignal,IAsyncSignal} from "flex-decorators/asyncSignal";
 
-**以下用一个例子来说明如何使用`asyncSignal`：**
+// 创建一个异步信号
+let signal = asyncSignal()
+
+// 等待异步信号被resolve或reject,并支持指定等待超时和默认返回值
+await signal(timeout:number=0 , returns?:any)       
+
+signal.resolve(result?:any)
+signal.reject(e?:Error | string);
+signal.id    // 标识
+// 信号被销毁时，产生一个中止错误，信号的使用者可以据此进行善后处理
+signal.destroy() 
+// 重置异步信号
+signal.reset()    
+// 返回异步信号的状态值
+signal.isResolved 
+signal.isRejected
+signal.isPending
+
+```
+
+**以下是一个例子使用`asyncSignal`的简单例子：**
 
 ```typescript
 import {asyncSignal,IAsyncSignal} from "flex-decorators/asyncSignal";
@@ -38,6 +59,7 @@ class Queue{
     }
     push(data){
         this.buffer.push(data)
+        // 当有数据时通过异步信号
         this.signal.resolve()
     }
 
@@ -45,28 +67,7 @@ class Queue{
 
 ```
 
-- `asyncSignal()`本质上是创建一个`Promise`
 
-### API
-
-
-```typescript
-import {asyncSignal,IAsyncSignal} from "flex-decorators/asyncSignal";
-
-let signal = asyncSignal()
-
-await signal(timeout:number=0 , returns?:any)        // 等待Promise的resolve/reject
-
-signal.resolve(result?:any)
-signal.reject(e?:Error | string);
-signal.id    // 标识
-signal.destroy() // 信号被销毁时，产生一个中止错误，信号的使用者可以据此进行善后处理
-signal.reset()    // 重置
-signal.isResolved 
-signal.isRejected
-signal.isPending
-
-```
 
 
 # AsyncSignalManager

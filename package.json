@@ -7,6 +7,9 @@
     },
     "main": "dist/index.js",
     "types": "dist/index.d.ts",
+    "scripts": {
+        "build": "tsup"
+    },
     "exports": {
         ".": {
             "import": "./dist/index.mjs",
@@ -16,6 +19,47 @@
             "import": "./dist/decorators/*.mjs",
             "require": "./dist/decorators/*.js"
         },
+        "./debounce": {
+            "import": "./dist/decorators/debounce.mjs",
+            "require": "./dist/decorators/debounce.js"
+        },
+        "./deprecate": {
+            "import": "./dist/decorators/deprecate.mjs",
+            "require": "./dist/decorators/deprecate.js"
+        },
+        "./memorize": {
+            "import": "./dist/decorators/memorize.mjs",
+            "require": "./dist/decorators/memorize.js"
+        },
+        "./noReentry": {
+            "import": "./dist/decorators/noReentry.mjs",
+            "require": "./dist/decorators/noReentry.js"
+        },
+        "./queue": {
+            "import": "./dist/decorators/queue.mjs",
+            "require": "./dist/decorators/queue.js"
+        },
+        "./reliable": {
+            "import": "./dist/decorators/reliable.mjs",
+            "require": "./dist/decorators/reliable.js"
+        },
+        "./retry": {
+            "import": "./dist/decorators/retry.mjs",
+            "require": "./dist/decorators/retry.js"
+        },
+        "./throttle": {
+            "import": "./dist/decorators/throttle.mjs",
+            "require": "./dist/decorators/throttle.js"
+        },
+        "./timeout": { 
+            "import": "./dist/decorators/timeout.mjs",
+            "require": "./dist/decorators/timeout.js",
+            "types":"./dist/decorators/timeout.d.ts"
+        },
+        "./verifyArgs": {
+            "import": "./dist/decorators/verifyArgs.mjs",
+            "require": "./dist/decorators/verifyArgs.js"
+        },
         "./wrappers/*": {
             "import": "./dist/wrappers/*.mjs",
             "require": "./dist/wrappers/*.js"
@@ -24,9 +68,9 @@
             "import": "./dist/asyncSignal.mjs",
             "require": "./dist/asyncSignal.js"
         },
-        "./eventEmitter": {
-            "import": "./dist/eventEmitter.mjs",
-            "require": "./dist/eventEmitter.js"
+        "./liteEventEmitter": {
+            "import": "./dist/liteEventEmitter.mjs",
+            "require": "./dist/liteEventEmitter.js"
         }
     },
     "devDependencies": {
