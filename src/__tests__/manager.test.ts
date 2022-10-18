@@ -1,10 +1,10 @@
 import { beforeEach,expect, test,vi,describe } from 'vitest'
 import {  
     createDecorator    
-} from "../src/index" 
-import { delay } from "../src/utils"
-import { DecoratorContext, DecoratorMethodContext, DecoratorOptions } from '../src/decorator';
-import { DecoratorManager, DecoratorManagerOptions, IDecoratorManagerHook } from '../src/manager';
+} from "../index" 
+import { delay } from "../utils"
+import { DecoratorContext, DecoratorMethodContext, DecoratorOptions } from '../decorator';
+import { DecoratorManager, DecoratorManagerOptions, IDecoratorManagerHook } from '../manager';
 
 interface CacheOptions extends DecoratorOptions{
     ttl?:number

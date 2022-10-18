@@ -1,8 +1,8 @@
 import { expect, test, beforeEach,beforeAll } from 'vitest'
-import { delay } from "../src/utils"
+import { delay } from "../utils"
 import {
     queue,IQueueDecoratorOptionsReader,QueueTask,QueueManager, QueueOptions
-} from "../src/decorators/queue"
+} from "../decorators/queue"
 
  
 

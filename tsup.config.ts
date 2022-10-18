@@ -2,9 +2,9 @@ import { defineConfig } from 'tsup'
 
 export default defineConfig({
     entry: [
-        'src/index.ts',
-        'src/asyncSignal.ts',
-        'src/liteEventEmitter.ts',
+        'src/*.ts',
+        // 'src/asyncSignal.ts',
+        // 'src/liteEventEmitter.ts',
         'src/decorators/*.ts',
         'src/wrappers/*.ts'
     ],
@@ -13,6 +13,7 @@ export default defineConfig({
     splitting: false,
     sourcemap: true,
     clean: true,
+    treeshake:false, 
     external: [
         '../liteEventEmitter',
         '../asyncSignal',
@@ -21,8 +22,7 @@ export default defineConfig({
         '../decorator',
         '../manager',
         /\.\.\/wrappers\/(.*)/,
-
-    ],
+    ], 
     banner: {
         js: `/**
 *        

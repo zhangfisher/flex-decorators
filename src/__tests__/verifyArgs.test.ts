@@ -1,8 +1,8 @@
 import { expect, test, beforeEach,beforeAll } from 'vitest'
-import { delay } from "../src/utils"
+import { delay } from "../utils"
 import {
     verifyArgs
-} from "../src/decorators/verifyArgs"
+} from "../decorators/verifyArgs"
 
  
 

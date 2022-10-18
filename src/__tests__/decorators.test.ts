@@ -2,10 +2,13 @@ import { expect, test, beforeEach } from 'vitest'
 import { 
     createDecorator,getDecorators,DecoratorOptions ,
     resetMethodDecorator,
+} from "../index" 
+
+import { 
     timeout,TimeoutOptions,ITimeoutDecoratorOptionsReader,
     retry,RetryOptions,IRetryDecoratorOptionsReader,
     noReentry,debounce,throttle
-} from "../src/index" 
+} from "../decorators" 
 
 
 async function delay(ms:number=10){
