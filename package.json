@@ -1,6 +1,6 @@
 {
     "name": "flex-decorators",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "types": "./dist/index.d.ts",
@@ -9,7 +9,7 @@
     "scripts": {
         "build": "tsup",
         "test": "pnpm vitest",
-        "release":"npm version patch  && npm publish"
+        "release": "npm version patch  && npm publish"
     },
     "files": [
         "dist/",
