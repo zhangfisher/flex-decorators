@@ -9,6 +9,16 @@
 - 使函数传入参数进行Hash后作为缓存键
 - 支持将缓存数据保存在浏览器的`LocaStorage`
 
+## 准备
+
+安装`flex-decorators`
+
+```typescript
+> npm install flex-decorators
+> yarn add flex-decorators
+> pnpm add flex-decorators
+```
+
 ## 第一步：声明装饰器参数
 
 `@Cache`装饰器支持可选的设定缓存键或缓存有效期，所有我们设计两个可选参数`ket`和`ttl`.
