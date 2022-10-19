@@ -1,37 +1,15 @@
 # flex-decorators
 
-#### 介绍
-基于typescript的装饰器工具库
+[文档](https://zhangfisher.github.io/flex-decorators/)
 
-#### 软件架构
-软件架构说明
+`flexDecortors`是使用`TypeScript`开发的用于简化装饰器开发的工具库。`flexDecortors`为开发装饰器提供了一套实践和规范，可以大大简化装饰器开发的开发，主要特性包括：
 
+- 基于`TypeScript`开发
+- 遵循装饰器包装逻辑与功能逻辑相分离的原则 
+- 提供完整的装饰器开发实践，简化开发装饰器和提高效率
+- 装饰器参数支持从实例中动态读取,并且当装饰器参数改变时能自动进行重新包装
+- 引入`装饰器管理器`功能来处理公共的装饰器逻辑
+- 内置一些功能强大开箱即用的常用装饰器
+- 核心代码`90%+`测试覆盖
 
-#### 安装教程
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 使用说明
-
-1.  xxxx
-2.  xxxx
-3.  xxxx
-
-#### 参与贡献
-
-1.  Fork 本仓库
-2.  新建 Feat_xxx 分支
-3.  提交代码
-4.  新建 Pull Request
-
-
-#### 特技
-
-1.  使用 Readme\_XXX.md 来支持不同的语言，例如 Readme\_en.md, Readme\_zh.md
-2.  Gitee 官方博客 [blog.gitee.com](https://blog.gitee.com)
-3.  你可以 [https://gitee.com/explore](https://gitee.com/explore) 这个地址来了解 Gitee 上的优秀开源项目
-4.  [GVP](https://gitee.com/gvp) 全称是 Gitee 最有价值开源项目，是综合评定出的优秀开源项目
-5.  Gitee 官方提供的使用手册 [https://gitee.com/help](https://gitee.com/help)
-6.  Gitee 封面人物是一档用来展示 Gitee 会员风采的栏目 [https://gitee.com/gitee-stars/](https://gitee.com/gitee-stars/)
+> **推荐：** [基于Nodejs/React/Vue的一键国际化解决方案](https://zhangfisher.github.io/voerka-i18n/)
