@@ -485,6 +485,38 @@ class MyClass2{
 
 以`快速入门`中的例子，上面的`MyClass1`和`MyClass2`这两个类分别创建了两个`CacheManager`实例，并且其参数可以是不一样的，实际上`@cacheManager({...})`传入的参数会被传递给管理器类。
 
+### 实现管理器接口
+
+一般情况下建议装饰器管理器继承自`DecoratorManager`，但是由于`JavaScript/TypeScript`不支持多继承，这样在某此情况下就比较麻烦。为此，`flex-decorators`也支持管理器只实现`IDecoratorManager`即可。
+
+```typescript
+
+export interface IDecoratorManager{
+    get running(): boolean      // 是否正在运行中
+    get enable(): boolean       // 是否启用装饰器功能
+    get decoratorName():string  // 装饰器名称
+    get status():DecoratorManagerStatus     // 管理器的状态
+    get defaultDecoratorOptions():Record<string,any>    // 默认的装饰器参数
+    start(timeout?:number):Awaited<Promise<any>>        // 启动装饰器管理器
+    stop(timeout?:number):Awaited<Promise<any>>         // 停止装饰器管理器
+    register(instance:IDecoratorManager):void           // 将被装饰的实例注册到管理器
+}
+
+import { IDecoratorManager } from "flex-decorators"
+class MyDecoratorManager implements IDecoratorManager{
+    //..
+}
+```
+
+- 如果选择实现`IDecoratorManager`接口，则开发者应该自行控制管理器的状态。
+
+### 开发装饰器管理器
+
+装饰器管理器负责装饰器的主要功能逻辑，要开发一个符合`flex-decorators`的装饰器管理器有两种方式：
+
+- 类继承自`DecoratorManager`
+- 类实现`IDecoratorManager`接口
+
 ### HOOK
 
 `管理器装饰器`支持`IDecoratorManagerHook`接口，可以在执行被装饰方法前后调用，这样装饰器管理器就可以进行一些功能扩展。

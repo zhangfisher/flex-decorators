@@ -8,9 +8,10 @@
     "repository": "https://zhangfisher.github.com/flex-decorators",
     "scripts": {
         "build": "tsup",
-        "test":"pnpm vitest"
+        "test": "pnpm vitest",
+        "release":"npm version patch  && npm publish"
     },
-    "files":[
+    "files": [
         "dist/",
         "./"
     ],
@@ -24,7 +25,6 @@
             "require": "./dist/decorators/timeout.js",
             "default": "./dist/decorators/timeout.js",
             "types": "./dist/decorators/timeout.d.ts"
-
         },
         "./debounce": {
             "import": "./dist/decorators/debounce.mjs",
@@ -83,23 +83,51 @@
             "require": "./dist/decorators/*.js"
         }
     },
-    "typesVersions":{
-        "*":{
-            "timeout": ["./dist/decorators/timeout.d.ts"],
-            "debounce": ["./dist/decorators/debounce.d.ts"],
-            "deprecate": ["./dist/decorators/deprecate.d.ts"],
-            "memorize": ["./dist/decorators/memorize.d.ts"],
-            "throttle": ["./dist/decorators/throttle.d.ts"],
-            "noReentry": ["./dist/decorators/noReentry.d.ts"],
-            "queue": ["./dist/decorators/queue.d.ts"],
-            "reliable": ["./dist/decorators/reliable.d.ts"],
-            "retry": ["./dist/decorators/retry.d.ts"],
-            "verifyArgs": ["./dist/decorators/verifyArgs.d.ts"],
-            "asyncSignal": ["./dist/asyncSignal.d.ts"],
-            "liteEventEmitter": ["./dist/liteEventEmitter.d.ts"],
-            "decorators": ["./dist/decorators/index.d.ts"],
-            "wrappers": ["./dist/wrappers/*.d.ts"]
-        }        
+    "typesVersions": {
+        "*": {
+            "timeout": [
+                "./dist/decorators/timeout.d.ts"
+            ],
+            "debounce": [
+                "./dist/decorators/debounce.d.ts"
+            ],
+            "deprecate": [
+                "./dist/decorators/deprecate.d.ts"
+            ],
+            "memorize": [
+                "./dist/decorators/memorize.d.ts"
+            ],
+            "throttle": [
+                "./dist/decorators/throttle.d.ts"
+            ],
+            "noReentry": [
+                "./dist/decorators/noReentry.d.ts"
+            ],
+            "queue": [
+                "./dist/decorators/queue.d.ts"
+            ],
+            "reliable": [
+                "./dist/decorators/reliable.d.ts"
+            ],
+            "retry": [
+                "./dist/decorators/retry.d.ts"
+            ],
+            "verifyArgs": [
+                "./dist/decorators/verifyArgs.d.ts"
+            ],
+            "asyncSignal": [
+                "./dist/asyncSignal.d.ts"
+            ],
+            "liteEventEmitter": [
+                "./dist/liteEventEmitter.d.ts"
+            ],
+            "decorators": [
+                "./dist/decorators/index.d.ts"
+            ],
+            "wrappers": [
+                "./dist/wrappers/*.d.ts"
+            ]
+        }
     },
     "dependencies": {
         "reflect-metadata": "^0.1.13",
@@ -110,6 +138,7 @@
         "@types/throttle-debounce": "^5.0.0",
         "@vitest/coverage-c8": "^0.23.4",
         "@vitest/ui": "^0.23.4",
+        "ansi-colors": "^4.1.3",
         "docsify": "^4.12.2",
         "ts-node": "^10.9.1",
         "tsup": "^6.2.3",

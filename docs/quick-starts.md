@@ -7,9 +7,9 @@
 - 能对类函数的执行结果进行缓存
 - 所有类均可以使用
 - 使函数传入参数进行Hash后作为缓存键
-- 支持将缓存数据保存在浏览器的`LocaStorage`
+- 支持多种缓存存储后端
 
-## 准备
+## 第一步：安装
 
 安装`flex-decorators`
 
@@ -19,9 +19,9 @@
 > pnpm add flex-decorators
 ```
 
-## 第一步：声明装饰器参数
+## 第二步：声明装饰器参数
 
-`@Cache`装饰器支持可选的设定缓存键或缓存有效期，所有我们设计两个可选参数`ket`和`ttl`.
+`@Cache`装饰器支持可选的设定缓存键或缓存有效期，所有我们设计两个可选参数`key`和`ttl`.
 
 ```typescript
 import { DecoratorOptions  } from "flex-decorators"
@@ -33,7 +33,7 @@ export interface CacheOptions extends DecoratorOptions{
 - **key**: 缓存键默认采用类名+方法名称，也可以自行指定。
 - **ttl**: 缓存生存期，以`ms`为单位，默认`0`代表永远有效。
 
-## 第二步：创建缓存管理器
+## 第三步：创建缓存管理器
 
 接下我们需要实现一个缓存管理器，负责提供缓存逻辑功能，包括：
 - 基本的异步缓存读写操作
@@ -115,7 +115,7 @@ class CacheManager extends DecoratorManager{
 }
 ```
 
-## 第三步：创建装饰器
+## 第四步：创建装饰器
 
 以上已经实现了一个继承自`DecoratorManager`的`CacheManager`负责缓存的处理逻辑。
 
@@ -153,7 +153,7 @@ export cache = createDecorator("cache",{
 - 然后需要通过`manager`参数来为装饰器提供一个管理器，管理器负责具体的业务逻辑实现。
 - `wrapper`参数只负责进行函数包装，应该返回包装后的函数。
 
-## 第四步：启动缓存管理器
+## 第五步：启动缓存管理器
 
 上面我们创建了一个`CacheManager`负责缓存的处理逻辑的逻辑，但是存在一个疑问，`CacheManager`实例什么时候被创建？
 
@@ -163,7 +163,7 @@ export cache = createDecorator("cache",{
 
 缓存管理器的这种默认按需延迟实例化和启动的形为，可以通过配置参数改变，`flex-decorators`支持`立即启动`、`延迟按需启动`、`手动启动`三种启动装饰器管理器的方式，详见指南中关于装饰器管理器的更多说明。
 
-## 第五步：访问缓存管理器
+## 第六步：访问缓存管理器
 
 为了对缓存进行全局控制，如清空缓存等，则我们可能需要访问缓存管理器。方法如下：
 
@@ -212,7 +212,7 @@ myclass.cacheManager  // == 缓存管理器实例
 
 上面的`@cacheManager`装饰器用来装饰类，目的是为当前类注入一个`cacheManager`的成员变量用来访问全局管理器
 
-## 第六步：缓存管理器作用域
+## 第七步：缓存管理器作用域
 
 `CacheManager`实例实现了缓存控制逻辑，默认情况下，所有`@cache`装饰器均共享同一个均`CacheManager`实例。
 而`flex-decorators`最强大的特性就是支持通过`@cacheManager`来创建多个`CacheManager`实例，`@cache`装饰器会使用其最近的`CacheManager`实例。
@@ -282,7 +282,7 @@ other1.cacheManager == other2.cacheManager
 - 每一个`UploadManager`均具有独立的`CacheManager`实例
 - 所有`@cacheManager({scope:'global'})`装饰或没有使用`@cacheManager`装饰的类均使用全局的`CacheManager`实例
 
-## 第六步：使用缓存装饰器
+## 第八步：使用缓存装饰器
 
 至此，我们已经开发了一个简单的缓存控制机制，在整个应用中可以直接使用
 

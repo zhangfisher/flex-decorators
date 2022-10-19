@@ -29,6 +29,7 @@ export function isFunction(obj: any):boolean {
     return typeof(obj)=='function'
 }
 
+
 export function isClass(cls: any):boolean {
     let result = false
     if (typeof(cls) === 'function' && cls.prototype) {

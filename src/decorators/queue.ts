@@ -9,7 +9,7 @@
 import { createDecorator  } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
 import type {AllowNull, AsyncFunction } from "../types"
-import {DecoratorManager,  DecoratorManagerOptions  } from "../manager"
+import {DecoratorManager,  DecoratorManagerOptions, IDecoratorManager  } from "../manager"
 import { asyncSignal,IAsyncSignal } from "../asyncSignal"
 import { applyParams, delay,  isFunction } from "../utils"
 import timeoutWrapper from "../wrappers/timeout"
@@ -429,7 +429,7 @@ export const queue = createDecorator<QueueOptions,any,number>("queue",
         default      : undefined,
         objectify    : false
     },{
-        wrapper: function(method:Function,options:QueueOptions,manager:DecoratorManager):Function {
+        wrapper: function(method:Function,options:QueueOptions,manager:IDecoratorManager):Function {
             return function(this:any):QueueTask | undefined {
                 let dispatcher:QueueTaskDispatcher
                 dispatcher  = (manager as QueueManager).getAndCreateDispatcher(this,method.bind(this),options)

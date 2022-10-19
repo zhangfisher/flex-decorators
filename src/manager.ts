@@ -4,7 +4,7 @@
 
 import { hasOwnProperty,getPropertyNames } from "./utils";
 import { asyncSignal, IAsyncSignal } from "./asyncSignal"
-import type { AllowNull,TypedClassDecorator, Constructor} from "./types"; 
+import type { AllowNull,TypedClassDecorator, Constructor, ImplementOf} from "./types"; 
 import { DecoratorContext, DecoratorMethodContext } from "./decorator";
 
 /**
@@ -124,10 +124,21 @@ export interface IDecoratorManagerHook {
     onAfterCall(instance:object,returns:any,methodContext:DecoratorMethodContext,decoratorContext:DecoratorContext):void
 }
 
+export interface IDecoratorManager{
+    get running(): boolean
+    get enable(): boolean
+    get decoratorName():string
+    get status():DecoratorManagerStatus 
+    get defaultDecoratorOptions():Record<string,any>
+    start(timeout?:number):Awaited<Promise<any>> 
+    stop(timeout?:number):Awaited<Promise<any>> 
+    register(instance:IDecoratorManager):void
+}
+
 /**
  * 装饰器管理器基类
  */
-export class DecoratorManager{    
+export class DecoratorManager implements IDecoratorManager{    
     #decoratorName:string = ""                                              // 装饰器名称
     #options:DecoratorManagerOptions 
     #status: DecoratorManagerStatus = DecoratorManagerStatus.INITIAL        // 状态
@@ -210,7 +221,7 @@ export class DecoratorManager{
      * 将使用装饰器的实例注册到管理器中
      * @param instance 
      */
-     register(instance:DecoratorManager){
+    register(instance:IDecoratorManager){
         if(!this.#instances.includes(instance)) this.#instances.push(instance)
     }
     /**
@@ -240,7 +251,7 @@ export class DecoratorManager{
  * @param managerClass 管理器类对象
  * @param options      管理器装饰器的参数
  */
-function defineDecoratorManagerProperty<T extends Constructor,O extends DecoratorManagerOptions>(decoratorContext:Record<string,any>,targetClass:T,managerClass :typeof DecoratorManager,options:O){
+function defineDecoratorManagerProperty<T extends Constructor,O extends DecoratorManagerOptions>(decoratorContext:Record<string,any>,targetClass:T,managerClass :ImplementOf<IDecoratorManager>,options:O){
     const { decoratorName }= decoratorContext
     const managerPropName = `${decoratorName}Manager`
     const managerInstancePropName = `__${decoratorName}Manager__`
@@ -279,7 +290,7 @@ export interface ManagerDecoratorCreator<T,O extends DecoratorManagerOptions>{
  *  T: 管理器类
  *  O: 管理器类配置参数类型
  */
- export function createManagerDecorator<T,O extends DecoratorManagerOptions>(decoratorContext:DecoratorContext, managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<T,O>{
+ export function createManagerDecorator<T,O extends DecoratorManagerOptions>(decoratorContext:DecoratorContext, managerClass :ImplementOf<IDecoratorManager>,  defaultOptions?:O):ManagerDecoratorCreator<T,O>{
     return (options?: O):TypedClassDecorator<T>=>{
         return function<T extends Constructor>(this:any,targetClass: T){  
             let finalOptions = Object.assign({scope:'global'},defaultOptions,options || {})

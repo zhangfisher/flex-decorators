@@ -1,6 +1,8 @@
 # 关于
 
-`flexDecortors`是使用`TypeScript`开发的用于简化装饰器开发的工具库。`flexDecortors`为开发装饰器提供了一套实践和规范，可以大大简化装饰器开发的开发，主要特性包括：
+`flexDecortors`是使用`TypeScript`开发的用于简化装饰器开发的工具库。`flexDecortors`为开发装饰器提供了一套实践和规范，可以大大简化装饰器开发的开发。
+
+**主要特性包括：**
 
 - 基于`TypeScript`开发
 - 遵循装饰器包装逻辑与功能逻辑相分离的原则 
@@ -10,4 +12,4 @@
 - 内置一些功能强大开箱即用的常用装饰器
 - 核心代码`90%+`测试覆盖
 
-> **推荐：** [基于Nodejs/React/Vue的一键国际化解决方案](https://zhangfisher.github.io/voerka-i18n/)
+> **推荐：** [基于Nodejs/React/Vue的一键国际化解决方案VoerkaI18n](https://zhangfisher.github.io/voerka-i18n/)

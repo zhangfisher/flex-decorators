@@ -6,7 +6,7 @@
  */
  import { createDecorator } from "../decorator"
  import type {DecoratorOptions} from "../decorator"
- import {DecoratorManager, DecoratorManagerOptions } from "../manager"
+ import {DecoratorManager, DecoratorManagerOptions, IDecoratorManager } from "../manager"
  
  export interface CacheOptions extends DecoratorOptions {
     expires?  : number                  // 过期时间，,以ms为单位，过期缓存失效
@@ -24,7 +24,7 @@ export const cache = createDecorator<CacheOptions>("cache",
          enable:true,                      
          key:'auto'
      },{
-         wrapper: function(method:Function,options:CacheOptions,manager:DecoratorManager):Function{
+         wrapper: function(method:Function,options:CacheOptions,manager?:IDecoratorManager):Function{
              return function(){
                 return method
              }             

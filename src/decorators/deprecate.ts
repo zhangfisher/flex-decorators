@@ -5,7 +5,7 @@
 
 import { createDecorator } from "../decorator"
 import type {DecoratorOptions} from "../decorator" 
-import { DecoratorManager } from "../manager"
+import { IDecoratorManager } from "../manager"
 
 export interface DeprecateOptions extends DecoratorOptions { 
     tips?: string,
@@ -13,7 +13,7 @@ export interface DeprecateOptions extends DecoratorOptions {
 }
 
 export const deprecate  = createDecorator<DeprecateOptions>("deprecate ",{tips:"",url:undefined},{
-    wrapper: function(method:Function,options:DeprecateOptions,manager:DecoratorManager, target:Object, propertyKey: string|symbol,descriptor:PropertyDescriptor):Function{
+    wrapper: function(method:Function,options:DeprecateOptions,manager:IDecoratorManager, target:Object, propertyKey: string|symbol,descriptor:PropertyDescriptor):Function{
         return function(this:any,...args:any[]):Function{ 
             let tips = `DEPRECATION: Method<${target.constructor.name}#${String(propertyKey)}> has been deprecated`
             if(options.tips) tips+=","+options.tips
