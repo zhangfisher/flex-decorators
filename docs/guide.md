@@ -325,7 +325,7 @@ import { createDecorator  } from "flex-decorators"
 export myDecorator= createDecorator("myDecorator",{
    // 装饰器默认参数
 },{
-    wrapper: function(method:Function,options:CacheOptions,manager?:DecoratorManager){
+    wrapper: function(method:Function,options:CacheOptions,manager?:IDecoratorManager){
         //...
     },
     // 1.提供管理器类，会根据initial参数自动实例化
@@ -341,7 +341,7 @@ export myDecorator= createDecorator("myDecorator",{
         // 决定什么时候实例化管理器,once=立刻实例化, demand=按需实例化, 
         initial?:'demand' | 'once' | 'manual'
         // 管理器类 / 管理器实例 / 返回
-        creator?:DecoratorManager | (typeof DecoratorManager) | LimitReturnFunction<DecoratorManager|typeof DecoratorManager>       
+        creator?:IDecoratorManager| (ImplementOf<IDecoratorManager>)  | (typeof DecoratorManager) | WithReturnFunction<IDecoratorManager|typeof DecoratorManager| (ImplementOf<IDecoratorManager>) >           
         // 传递给管理器实例的默认构造参数
         defaultOptions?:Record<string,any>   
     }
@@ -351,7 +351,7 @@ export myDecorator= createDecorator("myDecorator",{
 **`manager`参数类型为`DecoratorManagerCreateOptions`，声明如下：**
 
 ```typescript
-export type DecoratorManagerCreateOptions = DecoratorManagerCreateFinalOptions | (DecoratorManager | (typeof DecoratorManager) | LimitReturnFunction<DecoratorManager|typeof DecoratorManager>) | undefined
+export type DecoratorManagerCreateOptions = DecoratorManagerCreateFinalOptions | IDecoratorManager| (ImplementOf<IDecoratorManager>)  | (typeof DecoratorManager) | WithReturnFunction<IDecoratorManager|typeof DecoratorManager| (ImplementOf<IDecoratorManager>)> | undefined
 
 export type DecoratorManagerCreateFinalOptions = {
     // 是否启动装饰器管理器，当第一次调用时会实例化管理器，如果=false，则管理器需要由开发者自行初始化并启动
@@ -359,7 +359,7 @@ export type DecoratorManagerCreateFinalOptions = {
     // 决定什么时候实例化管理器,once=立刻实例化, demand=按需实例化, 
     initial?:'demand' | 'once' | 'manual'
     // 管理器类 / 管理器实例 / 返回
-    creator?:DecoratorManager | (typeof DecoratorManager) | LimitReturnFunction<DecoratorManager|typeof DecoratorManager>       
+    creator?:IDecoratorManager| (ImplementOf<IDecoratorManager>)  | (typeof DecoratorManager) | WithReturnFunction<IDecoratorManager|typeof DecoratorManager| (ImplementOf<IDecoratorManager>) >          
     // 传递给管理器实例的默认构造参数
     defaultOptions?:Record<string,any>              
 }
@@ -368,7 +368,7 @@ export type DecoratorManagerCreateFinalOptions = {
 **说明:**
 
 - `initial`默认值是`demand`，即按需自动实例化管理器，当首次调用被对应装饰器装饰的方法时自动实例化装饰器，如果`autoStart=true`,则同时自动启动该管理器。
-- `manager`参数可以简化为提供一个`DecoratorManager`类或实例，或者一个返回`DecoratorManager`类或实例的函数。
+- `manager`参数可以简化为提供一个`DecoratorManager`类或实例，或者一个实现了`IDecoratorManager`的类或实例，或者一个返回`DecoratorManager`类或实例的函数。
 - 可以为`manager`参数提供一个默认参数`defaultOptions`，用在实例化管理器传入。
 
 ### 实例化装饰器管理器
@@ -403,7 +403,7 @@ export class DecoratorManager{
     async onStart()
     async stop(timeout?:number) 
     async onStop()
-     register(instance:DecoratorManager)
+    register(instance:DecoratorManager)
     getMethods(instance?:object):DecoratorList | DecoratedMethodList
 } 
 ```
@@ -430,7 +430,7 @@ export class DecoratorManager{
 
 `createManagerDecorator`方法签名如下：
 ```typescript
-function<MANAGER extends DecoratorManager,OPTIONS extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:OPTIONS):ManagerDecoratorCreator<MANAGER,OPTIONS>
+function createManagerDecorator<MANAGER extends ImplementOf<IDecoratorManager>,OPTIONS extends DecoratorManagerOptions>(managerClass :ImplementOf<IDecoratorManager>,  defaultOptions?:OPTIONS):ManagerDecoratorCreator<MANAGER,OPTIONS>
 ```
 
 示例如下：
@@ -549,7 +549,7 @@ export type DecoratorContext = {
     defaultOptions:Record<string,any>           // 装饰器默认参数
     createOptions:Record<string,any>            // 创建装饰器的参数
     decoratorName:string      
-    manager?:DecoratorManager                   // 全局管理器实例
+    manager?:IDecoratorManager                   // 全局管理器实例
     [key:string]:any
 }
 ```

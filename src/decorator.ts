@@ -52,12 +52,11 @@ export interface DecoratorCreator<T,M,D> {
 export type DecoratorManagerCreateFinalOptions = {
     autoStart?:boolean                              // 是否启动装饰器管理器，当第一次调用时会实例化管理器，如果=false，则管理器需要由开发者自行初始化并启动
     initial?:'demand' | 'once'                      // 决定什么时候实例化管理器，once=立刻实例化, demand=按需实例化, manual
-    // IDecoratorManager
     creator?:IDecoratorManager| (ImplementOf<IDecoratorManager>)  | (typeof DecoratorManager) | WithReturnFunction<IDecoratorManager|typeof DecoratorManager| (ImplementOf<IDecoratorManager>) >    
     defaultOptions?:Record<string,any>              // 传递给管理器实例的默认构造参数
 }
 
-export type DecoratorManagerCreateOptions = DecoratorManagerCreateFinalOptions | (IDecoratorManager | (typeof DecoratorManager) | WithReturnFunction< IDecoratorManager |typeof DecoratorManager>) | undefined
+export type DecoratorManagerCreateOptions = DecoratorManagerCreateFinalOptions | IDecoratorManager| (ImplementOf<IDecoratorManager>)  | (typeof DecoratorManager) | WithReturnFunction<IDecoratorManager|typeof DecoratorManager| (ImplementOf<IDecoratorManager>)> | undefined
 
 export interface createDecoratorOptions<T,M>{
     wrapper?:DecoratorMethodWrapper<T,M>
