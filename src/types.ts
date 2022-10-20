@@ -12,3 +12,4 @@ export type WithReturnFunction<T> = (...args: any)=>T
 
 // 实现某个指定的类接口
 export type ImplementOf<T> = new (...args: any) => T
+export type TypedMethodDecorator<T> = (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;

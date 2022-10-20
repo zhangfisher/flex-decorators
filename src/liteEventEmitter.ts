@@ -64,7 +64,7 @@ export class LiteEventEmitter{
      * - 如果计数器=0则移除
      * @param event 
      */
-    _updateListenerCounter(event:string){
+    private _updateListenerCounter(event:string){
         const listeners  = this.#listeners.get(event) || []
         try{
             for(let i = listeners.length-1; i >=0 ; i--){
@@ -78,7 +78,7 @@ export class LiteEventEmitter{
             }
         }catch{}
     }
-    emit(this:any,event:string,...args:any[]):void{
+    emit(event:string,...args:any[]):void{
         const listeners  = this.#listeners.get(event) || []
         for(let i = listeners.length-1; i >=0 ; i--){
             const [listener,counter] = listeners[i]
@@ -96,10 +96,10 @@ export class LiteEventEmitter{
         }
         this._updateListenerCounter(event)
     }
-    async emitAsync(this:any,event:string,...args:any[]){
+    async emitAsync(event:string,...args:any[]):Promise<(any | Error)[]>{
         const listeners  = this.getListeners(event)        
         let results = await Promise.allSettled(listeners.map((listener:Function) =>listener.apply(this,args))) 
         this._updateListenerCounter(event)
-        return results
+        return results.map((result=>result.status =='fulfilled' ? result.value : result.reason))
     }
 }

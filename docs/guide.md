@@ -268,7 +268,6 @@ class MyClass{
 
 > 因此，当装饰器功能涉及到异步操作时，一般应该配置`asyncWrapper=true`.
 
-
 ## 装饰器管理器
 
 ### 概念
@@ -553,6 +552,7 @@ export type DecoratorContext = {
     [key:string]:any
 }
 ```
+
 ## 遍历类被装饰方法
 
 使用`getDecorators`方法可以读取到当前类中所有被装饰的方法。
@@ -580,13 +580,13 @@ class MyClass1{
     method3{}
 }
 
-getDecorators(new MyClass1(),"cache") // == {method1:{装饰器参数},method2:{装饰器参数}}
-getDecorators(new MyClass1(),"timeout") // == {method3:{装饰器参数},method3:{装饰器参数}}
+getDecorators(new MyClass1(),"cache") // == {method1:[{装饰器参数}],method2:[{装饰器参数}]}
+getDecorators(new MyClass1(),"timeout") // == {method3:[{装饰器参数}],method3:[{装饰器参数}]}
 
 getDecorators(new MyClass1()) 
 // == {
-//      cache:{method1:{装饰器参数},method2:{装饰器参数}},
-//      timeout:{method3:{装饰器参数},method3:{装饰器参数}}
+//      cache:{method1:[{装饰器参数}],method2:[{装饰器参数}]},
+//      timeout:{method3:[{装饰器参数}],method3:[{装饰器参数}]}
 // }
 ```
 
@@ -596,3 +596,41 @@ getDecorators(new MyClass1())
 let manager:CacheManager = cache.getManager()
 manager.getMethods(new MyClass1())        //== getDecorators(new MyClass1(),"cache") 
 ```
+
+**注：** 为什么`getDecorators`输出结果是`Array`？因为一个方法有可能会装饰多次。
+
+
+
+## 创建简版装饰器
+
+`createLiteDecorator`用于创建一个简版的装饰器，`createLiteDecorator`创建的装饰器仅是在目标方法上定义元数据。
+
+`createLiteDecorator`的**函数类型**
+
+```typescript
+function createLiteDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFAULT_OPTION=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): ListDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>
+
+```
+2. ** 创建装饰器 **
+
+```typescript
+
+import { createLiteDecorator }  from "flex-decorators"
+
+interface  myDecoratorOptions extends createLiteDecoratorOptions{
+    param1:number,
+    param2:boolean
+}
+let myDecorator = createLiteDecorator<myDecoratorOptions>("myDecorator",{
+    // 默认装饰器参数
+    param1:1,
+    param2:true
+},{
+    defalutOptionKey:"param1"           // 指定默认装饰器参数
+})
+
+```
+
+**然后就可以来通过`getDecorators`方法就可以读取指定实例的装饰信息。**
+
+ 

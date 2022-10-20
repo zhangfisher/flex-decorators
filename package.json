@@ -124,7 +124,7 @@
             "decorators": [
                 "./dist/decorators/index.d.ts"
             ],
-            "wrappers": [
+            "wrappers/*": [
                 "./dist/wrappers/*.d.ts"
             ]
         }

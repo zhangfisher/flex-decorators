@@ -13,7 +13,7 @@ import memorize from './memorize';
  *
  */
 
-type reliableOptions={
+export type reliableOptions={
     timeout         : number,                            // 执行失败超时,默认为1分钟
     retryCount      : number,                            // 重试次数
     retryInterval   : number,                            // 重试间隔

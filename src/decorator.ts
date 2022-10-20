@@ -2,7 +2,7 @@ import "reflect-metadata";
 import { DecoratorManager,IDecoratorManager, createManagerDecorator, DecoratorManagerStatus   } from './manager';
 import { isDiff,pick,isClass,firstUpperCase,isAsyncFunction, setObjectDefaultValue } from "./utils"
 import type {ManagerDecoratorCreator,DecoratorManagerOptions}  from "./manager"
-import type { Constructor, ImplementOf, WithReturnFunction } from "./types"
+import type { Constructor, ImplementOf, TypedMethodDecorator, WithReturnFunction } from "./types"
 
 
 
@@ -12,9 +12,9 @@ export type DecoratorMethodWrapperOptions<T> =T extends (DecoratorOptionsReader<
  * 函数包装器
  * 用来对原始方法进行包装并返回包装后的方法
  */
-export type DecoratorMethodWrapper<T,M> = (
-    (method:M ,options:T,manager?:IDecoratorManager )=>M )
-    | ((method:M , options:T,manager:IDecoratorManager, target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<M>)=>M 
+export type DecoratorMethodWrapper<OPTIONS,METHOD> = (
+    (method:METHOD ,options:OPTIONS,manager?:IDecoratorManager )=>METHOD )
+    | ((method:METHOD , options:OPTIONS,manager:IDecoratorManager, target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<METHOD>)=>METHOD 
 )
 
 
@@ -40,7 +40,6 @@ export interface DecoratorOptions {
     enable?: boolean                            // 是否启用或关闭装饰器
 }
 
-export type TypedMethodDecorator<T> = (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
 
 export interface DecoratorCreator<T,M,D> {
     (options?:T | D):TypedMethodDecorator<M> 
@@ -58,8 +57,8 @@ export type DecoratorManagerCreateFinalOptions = {
 
 export type DecoratorManagerCreateOptions = DecoratorManagerCreateFinalOptions | IDecoratorManager| (ImplementOf<IDecoratorManager>)  | (typeof DecoratorManager) | WithReturnFunction<IDecoratorManager|typeof DecoratorManager| (ImplementOf<IDecoratorManager>)> | undefined
 
-export interface createDecoratorOptions<T,M>{
-    wrapper?:DecoratorMethodWrapper<T,M>
+export interface createDecoratorOptions<OPTIONS,METHOD>{
+    wrapper?:DecoratorMethodWrapper<OPTIONS,METHOD>
     singleton?:boolean                      // 指定方法上是否只能一个该装饰器,如果重复使用则会出错    
     defaultOptionKey?:string                // 默认配置参数的字段名称,当只提供一个参数时,视为该字段值,如retry(10)=={count:10}
     // 当装饰器的默认参数是一个{}时，传入{}就会存在岐义，比如verifyArgs的defaultOptionKey='validate"
@@ -319,10 +318,13 @@ function useCommonDecoratorWrapper<T extends DecoratorOptions,M>(decoratorContex
 
 /**
  * 处理装饰器参数
+ * 
+ * T: 装饰器参数
+ * 
  * @param options 
  * @param methodContext 
  */
-function handleDecoratorOptions<T>(decoratorContext:DecoratorContext,methodContext:DecoratorMethodContext,options?:T){
+export function handleDecoratorOptions<T>(decoratorContext:DecoratorContext,methodContext:DecoratorMethodContext,options?:T,enableOptionsReader:boolean=true){
     let { methodName } = methodContext
     let {createOptions,defaultOptions, decoratorName,manager} = decoratorContext
     let managerDecoratorOptions = {}  //
@@ -347,16 +349,21 @@ function handleDecoratorOptions<T>(decoratorContext:DecoratorContext,methodConte
         }             
     }            
     if(!finalOptions.id) finalOptions.id = String(methodName) ;
-    // 2. 创建代理从当前实现读取装饰器参数
-    let optionsReader:null | DecoratorOptionsReader<T> = null // 用来从当前实例读取装饰器参数的代理函数
-    optionsReader = getDecoratorOptionsReader<T>(finalOptions as T,methodName,decoratorName) 
+ 
     // 注入处理后的参数
     methodContext['options'] =finalOptions
-    if(optionsReader){
-        methodContext['optionsReader'] = optionsReader
-    }else{
-        methodContext['optionsReader'] = finalOptions
-    }    
+    
+    // 2. 创建代理从当前实现读取装饰器参数
+    if(enableOptionsReader){
+        let optionsReader:null | DecoratorOptionsReader<T> = null // 用来从当前实例读取装饰器参数的代理函数
+        optionsReader = getDecoratorOptionsReader<T>(finalOptions as T,methodName,decoratorName) 
+        if(optionsReader){
+            methodContext['optionsReader'] = optionsReader
+        }else{
+            methodContext['optionsReader'] = finalOptions
+        }    
+    }
+    
 }
 
 
@@ -366,7 +373,7 @@ function handleDecoratorOptions<T>(decoratorContext:DecoratorContext,methodConte
  * getDecorators方法可以通过查找元数据来获得装饰信息
  * 
  */
-function defineDecoratorMetadata<T>(decoratorContext:DecoratorContext,methodContext:DecoratorMethodContext){
+export function defineDecoratorMetadata<T>(decoratorContext:DecoratorContext,methodContext:DecoratorMethodContext){
     let {class:target,methodName,optionsReader,options } = methodContext
     let {decoratorName,createOptions } = decoratorContext
     let metadataKey = `decorator:${decoratorName}`
