@@ -1,4 +1,4 @@
-* [关于](/readme)
+* [关于](/README)
 * [快速入门](quick-starts.md)
 * [指南](/guide)
 * [装饰器参考](/decorators)
