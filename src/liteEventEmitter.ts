@@ -5,9 +5,9 @@
  */
 
  export interface LiteEventEmitterOptions{
-    context?: any               // 可选的上下文对象，当指定时作为订阅者的this
-    ignoreError?: boolean       // 是否忽略订阅者的执行错误
-    delimiter?:string           // 事件名称分割符
+    context?: any                   // 可选的上下文对象，当指定时作为订阅者的this
+    ignoreError?: boolean           // 是否忽略订阅者的执行错误
+    delimiter?:string               // 事件名称分割符
     [key: string]:any
  }
 
@@ -16,33 +16,43 @@ export class LiteEventEmitter{
     #options:Required<LiteEventEmitterOptions>  
     constructor(options:LiteEventEmitterOptions={}){
         this.#options = Object.assign({
-            ignoreError:true,
-            context:null,
-            delimiter:"/"
+            ignoreError : false,
+            context     : null,
+            delimiter   : "/"
         },options) as Required<LiteEventEmitterOptions>
     }
     get options(){ return this.#options}
     get context(){ return this.options.context}
-    on(event:string,callback:Function){
+    get listeners(){ return this.#listeners}
+    on(event:string,callback:Function,listenCount:number=-1){
         if(!this.#listeners.has(event)){
             this.#listeners.set(event,[])
         }
-        this.#listeners.get(event)!.splice(0,0,[callback,-1])
-    }
+        this.#listeners.get(event)!.splice(0,0,[callback,listenCount])
+    } 
+    /**
+     * 只订阅一次事件
+     * @param event 
+     * @param callback 
+     */
     once(event:string,callback:Function){
         if(!this.#listeners.has(event)){
             this.#listeners.set(event,[])
         }
         this.#listeners.get(event)!.splice(0,0,[callback,1])
-    }    
+    }   
+    /**
+     * 退订事件
+     * @param event 
+     * @param callback 
+     */
     off(event:string,callback:Function){
-        if(!this.#listeners.has(event)) return
-        let listeners = this.#listeners.get(event) || []
-        for(let i=listeners.length-1;i>=0;i--) {
-            if(listeners[i][0]==callback){
-                listeners.splice(i,1)
+        this.forEachListeners(event,(eventName:string,listener:Function,listeners:[Function,number][],index:number)=>{
+            if(listener == callback ){
+                listeners.splice(index,1)
+                if(listeners.length==0) this.#listeners.delete(eventName)
             }
-        }
+        },false,true)
     }
     /**
      * 等待某个事件触发后返回
@@ -54,9 +64,6 @@ export class LiteEventEmitter{
                 resolve()
             })
         })
-    }
-    clear(){
-        this.offAll()
     }
     offAll(event?:string){
         if(event){
@@ -71,10 +78,10 @@ export class LiteEventEmitter{
      * @returns 
      */
     getListeners(event:string):Function[]{
-        let listeners = this.getEventListeners(event)
+        let listeners = this.getMatchedEventListeners(event)
         let callbacks:Function[] = []
         for(let cbs of Object.values(listeners)){
-            callbacks.push(...cbs)
+            callbacks.push(...cbs.map(cb=>cb[0]))
         }
         return callbacks
     }
@@ -82,23 +89,23 @@ export class LiteEventEmitter{
      * 获取指定事件侦听器
      * @param event  事件名称，支持通配符*，如 
      * @param event 
-     * @returns   {eventName:[Function,...,Function],eventName:[Function,...,Function]}
+     * @returns   {eventName:[[Function,count:number],...,[Function,count:number]],eventName:[[Function,count:number],...,[Function,count:number]]}
      */
-    private getEventListeners(event:string):Record<string,Function[]>{
+    private getMatchedEventListeners(event:string):Record<string,[Function,number][]>{
         if(event.includes('*')){
-            let listeners:Record<string,Function[]>= {}
-            for(let [eventName,[[listener]]] of this.#listeners){
-                if(this.isMatchedEvent(eventName,event )){
+            let listeners:Record<string,[Function,number][]>= {}
+            for(let [eventName,[listenerInfo]] of this.#listeners){
+                if(this.isMatchedEvent(eventName,event)){
                     if(!(eventName in listeners) ) listeners[eventName] = []
-                    listeners[eventName].push(listener)                        
+                    listeners[eventName].push(listenerInfo)                        
                 }
             }
             return listeners
         }else{
-            type listenersType = Record<string, Function[]>
+            type listenersType = Record<string, [Function,number][]>
             return (this.#listeners.get(event) || []).reduce<listenersType>((results: listenersType, listenerInfo:[Function,number]) => {
                 if (!(event in results)) results[event] = []
-                results[event].push(listenerInfo[0])
+                results[event].push(listenerInfo)
                 return results
             }, {} as  listenersType) 
         }    
@@ -127,37 +134,19 @@ export class LiteEventEmitter{
         return false
     }
     /**
-     * - 对侦听器中counter值大于0的减一
-     * - 如果计数器 =0 则移除
-     * @param event 支持通配符
-     */
-    private _updateListenerCounter(event:string){
-        for(let [eventName,listeners] of this.#listeners){
-            if(this.isMatchedEvent(eventName,event)){
-                for(let i = listeners.length-1; i >=0 ; i--){
-                    const counter = listeners[i][1] 
-                    if(counter>0){
-                        listeners[i][1] --
-                        if(listeners[i][1] ==0){
-                            listeners.splice(i, 1)
-                        }
-                    }        
-                }
-                
-            }
-        }
-    }
-    /**
      * 遍历匹配指定事件event的侦听器
      * @param event 
      * @param callback 
      * @param updateCounter  是否更新调用计数，仅当emit时才应该设定为false
+     * @param reserve 反转匹配，当on,off时采用不同的匹配方高
+     * 
      */
-    private forEachListeners(event:string,callback:Function,updateCounter:boolean=false){
-        for(let [eventName,listeners] of this.#listeners){
-            if(this.isMatchedEvent(eventName,event)){
+    private forEachListeners(event:string,callback:Function,updateCounter:boolean=false,reserve:boolean=false){
+        for(let [listenerName,listeners] of this.#listeners){
+            let matchParams:string[] = reserve ? [listenerName,event] : [event,listenerName]
+            if(this.isMatchedEvent(matchParams[0],matchParams[1])){
                 for(let i = listeners.length-1; i >=0 ; i--){                    
-                    callback(eventName,listeners[i][0])
+                    callback(listenerName,listeners[i][0],listeners,i)
                     if(!updateCounter) continue                        
                     if(listeners[i][1]>0){
                         listeners[i][1]--
@@ -170,15 +159,15 @@ export class LiteEventEmitter{
         }
     }
     /**
-     * 返回侦听器
-     * @param 
+     * 返回event侦听器异步调用函数列表
+     * @param event 支持通配符
      * @param updateCounter 
      * @returns 
      */
-    private mapAsyncListeners(event:string,updateCounter:boolean=false){
+    private mapAsyncListeners(event:string,args:any[],updateCounter:boolean=false){
         let mapedListeners:Awaited<Promise<any>>[] = []        
         this.forEachListeners(event,(eventName:string,listener:Function)=>{
-            mapedListeners.push(async (...args:any[])=>{
+            mapedListeners.push(async ()=>{
                 if(this.context){
                     return await listener.apply(this.context, args)
                 }else{
@@ -188,7 +177,11 @@ export class LiteEventEmitter{
         },updateCounter) 
         return mapedListeners
     }
-    
+    /**
+     * 执行侦听函数
+     * @param listener 
+     * @param args 
+     */
     private executeListener(listener:Function,...args:any[]){
         try{
             if(this.context){
@@ -206,16 +199,17 @@ export class LiteEventEmitter{
     /**
      * 触发事件，支持简单的通配符
      * 
-     * '*' 代表任意字符
+     * '*' 匹配任意字符
+     * '**' 匹配任意级
      * 
      */
     emit(event:string,...args:any[]):void{
         this.forEachListeners(event,(eventName:string,listener:Function)=>{
-            this.executeListener(listener)
+            this.executeListener(listener,...args)
         },true)
     }
     async emitAsync(event:string,...args:any[]):Promise<(any | Error)[]>{
-        let results = await Promise.allSettled(this.mapAsyncListeners(event,true)) 
+        let results = await Promise.allSettled(this.mapAsyncListeners(event,args,true).map(listener=> listener())) 
         return results.map((result=>result.status =='fulfilled' ? result.value : result.reason))
     }
 }
