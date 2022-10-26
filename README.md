@@ -12,4 +12,11 @@
 - 内置一些功能强大开箱即用的常用装饰器
 - 核心代码`90%+`测试覆盖
 
-> **推荐：** [基于Nodejs/React/Vue的一键国际化解决方案](https://zhangfisher.github.io/voerka-i18n/)
+
+# **开源推荐：** 
+
+- **`VoerkaI18n`**: [基于Nodejs/React/Vue的一键国际化解决方案](https://zhangfisher.github.io/voerka-i18n/)
+- **`Logsets`**: [命令行应用增强输出库](https://zhangfisher.github.io/logsets/)
+- **`AutoPub`**:  [基于pnpm/monorepo的自动发包工具](https://zhangfisher.github.io/autppub/)
+- **`FlexDecorators`**:  [JavaScript/TypeScript装饰器开发](https://zhangfisher.github.io/flex-decorators/)
+- **`FlexState`**:  [有限状态机实现]](https://zhangfisher.github.io/flexstate/)
