@@ -4,8 +4,8 @@
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "types": "./dist/index.d.ts",
-    "homepage": "https://zhangfisher.github.com/flex-decorators",
-    "repository": "https://zhangfisher.github.com/flex-decorators",
+    "homepage": "https://zhangfisher.github.io/flex-decorators",
+    "repository": "https://zhangfisher.github.io/flex-decorators",
     "scripts": {
         "build": "tsup",
         "test": "pnpm vitest",
