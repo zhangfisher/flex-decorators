@@ -1,6 +1,6 @@
 {
     "name": "flex-decorators",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "types": "./dist/index.d.ts",
@@ -23,16 +23,15 @@
         "./timeout": {
             "import": "./dist/decorators/timeout.mjs",
             "require": "./dist/decorators/timeout.js",
-            "default": "./dist/decorators/timeout.js",
-            "types": "./dist/decorators/timeout.d.ts"
+            "default": "./dist/decorators/timeout.js" 
         },
         "./debounce": {
             "import": "./dist/decorators/debounce.mjs",
-            "require": "./dist/decorators/debounce.js"
+            "require": "./dist/decorators/debounce.js" 
         },
         "./deprecate": {
             "import": "./dist/decorators/deprecate.mjs",
-            "require": "./dist/decorators/deprecate.js"
+            "require": "./dist/decorators/deprecate.js" 
         },
         "./memorize": {
             "import": "./dist/decorators/memorize.mjs",
@@ -80,7 +79,8 @@
         },
         "./decorators/*": {
             "import": "./dist/decorators/*.mjs",
-            "require": "./dist/decorators/*.js"
+            "require": "./dist/decorators/*.js",
+            "types": "./dist/decorators/*.d.ts"
         }
     },
     "typesVersions": {
@@ -124,8 +124,26 @@
             "decorators": [
                 "./dist/decorators/index.d.ts"
             ],
-            "wrappers": [
-                "./dist/wrappers/*.d.ts"
+            "wrappers/timeout": [
+                "./dist/wrappers/timeout.d.ts"
+            ],
+            "wrappers/debounce": [
+                "./dist/wrappers/debounce.d.ts"
+            ],
+            "wrappers/memorize": [
+                "./dist/wrappers/memorize.d.ts"
+            ],
+            "wrappers/noReentry": [
+                "./dist/wrappers/noReentry.d.ts"
+            ],
+            "wrappers/reliable": [
+                "./dist/wrappers/reliable.d.ts"
+            ],
+            "wrappers/retry": [
+                "./dist/wrappers/retry.d.ts"
+            ],
+            "wrappers/throttle": [
+                "./dist/wrappers/throttle.d.ts"
             ]
         }
     },
