@@ -322,7 +322,7 @@ function useCommonDecoratorWrapper<T extends DecoratorOptions,M>(decoratorContex
  * @param options 
  * @param methodContext 
  */
-function handleDecoratorOptions<T>(decoratorContext:DecoratorContext,methodContext:DecoratorMethodContext,options?:T){
+export function handleDecoratorOptions<T>(decoratorContext:DecoratorContext,methodContext:DecoratorMethodContext,options?:T){
     let { methodName } = methodContext
     let {createOptions,defaultOptions, decoratorName,manager} = decoratorContext
     let managerDecoratorOptions = {}  //
@@ -366,7 +366,7 @@ function handleDecoratorOptions<T>(decoratorContext:DecoratorContext,methodConte
  * getDecorators方法可以通过查找元数据来获得装饰信息
  * 
  */
-function defineDecoratorMetadata<T>(decoratorContext:DecoratorContext,methodContext:DecoratorMethodContext){
+export function defineDecoratorMetadata<T>(decoratorContext:DecoratorContext,methodContext:DecoratorMethodContext){
     let {class:target,methodName,optionsReader,options } = methodContext
     let {decoratorName,createOptions } = decoratorContext
     let metadataKey = `decorator:${decoratorName}`

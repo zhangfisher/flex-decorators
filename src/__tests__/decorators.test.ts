@@ -258,7 +258,7 @@ test("节流装饰器",async ()=>{
         await x.test()
     }
     expect(x.runs.length).toBeLessThan(60)
-    expect(x.runs.length).toBeGreaterThan(40)
+    expect(x.runs.length).toBeGreaterThan(20)
 })
 
 test("装饰器参数变更导致重新包装函数",async ()=>{
