@@ -3,8 +3,7 @@ import { DecoratorManager,IDecoratorManager, createManagerDecorator, DecoratorMa
 import { isDiff,pick,isClass,firstUpperCase,isAsyncFunction, setObjectDefaultValue } from "./utils"
 import type {ManagerDecoratorCreator,DecoratorManagerOptions}  from "./manager"
 import type { Constructor, ImplementOf, WithReturnFunction } from "./types"
-
-
+ 
 
 export type DecoratorMethodWrapperOptions<T> =T extends (DecoratorOptionsReader<T>) ? DecoratorOptionsReader<T> : T
 

@@ -11,8 +11,11 @@
 
 export class LiteEventEmitter{
     #listeners:Map<string,[Function,number][]> = new Map()
-    constructor(public options:LiteEventEmitterOptions = {ignoreError:true,context:null}){
+    #options:LiteEventEmitterOptions = {ignoreError:true,context:null}
+    constructor(options:LiteEventEmitterOptions = {ignoreError:true,context:null}){
+        this.#options = Object.assign({ignoreError:true,context:null},options)
     }
+    get options(){return this.#options}
     get context(){ return this.options.context}
     on(event:string,callback:Function){
         if(!this.#listeners.has(event)){
