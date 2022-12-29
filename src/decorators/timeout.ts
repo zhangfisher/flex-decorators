@@ -1,7 +1,7 @@
 import { createDecorator } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
 import type {AsyncFunction } from "../types"
-import timeoutWrapper from "../wrappers/timeout"
+import {timeout as timeoutWrapper} from "flex-tools"
 
 // ------------------------ TIMEOUT ------------------------ 
 export interface TimeoutOptions extends DecoratorOptions {

@@ -19,8 +19,9 @@
 
  import { createDecorator } from "../decorator"
  import type {DecoratorOptions} from "../decorator"
-import { deepMerge, isAsyncFunction, isPlainObject, mixinArray } from "../utils"
- 
+import { deepMerge, isAsyncFunction, isPlainObject  } from "flex-tools"
+import { mixinArray } from "../utils"
+
  export interface VerifyArgsOptions extends DecoratorOptions { 
     validate?:(args: any[]) => any | [] | Record<string | symbol, any> | undefined         // 应该返回规范化后的参数
  }

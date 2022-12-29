@@ -1,12 +1,7 @@
 import type { AsyncFunction } from "../types";
-import {applyParams } from "../utils"
-import noReentry from "./noReentry"
-import timeout from "./timeout"
-import retry from "./retry"
+import { noReentry,timeout,retry,memorize,applyParams } from "flex-tools"
 import debounce from "./debounce"
 import throttle from "./throttle"
-import memorize from './memorize';
-
 /**
  *
  * 包装函数，使具备重试、超时特性

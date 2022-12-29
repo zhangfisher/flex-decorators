@@ -1,5 +1,5 @@
 import { expect, test, beforeEach,beforeAll } from 'vitest'
-import { delay } from "../utils"
+import { delay } from "flex-tools"
 import {
     queue,IQueueDecoratorOptionsReader,QueueTask,QueueManager, QueueOptions
 } from "../decorators/queue"
@@ -137,6 +137,7 @@ test("排队任务过期自动清理",async ()=>{
     expect(a1.values.length).toBe(1)   
     expect(a1.values[0]).toBe(0)    
     expect(discardCount).toBe(9)    
+
 
 })
 

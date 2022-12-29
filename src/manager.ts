@@ -2,8 +2,8 @@
  * 装饰器管理器
  */
 
-import { hasOwnProperty,getPropertyNames } from "./utils";
-import { asyncSignal, IAsyncSignal } from "./asyncSignal"
+import { hasOwnProperty } from "./utils";
+import { asyncSignal, IAsyncSignal,getPropertyNames } from "flex-tools"
 import type { AllowNull,TypedClassDecorator, Constructor, ImplementOf} from "./types"; 
 import { DecoratorContext, DecoratorMethodContext } from "./decorator";
 

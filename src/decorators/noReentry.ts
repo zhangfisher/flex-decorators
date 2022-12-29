@@ -1,6 +1,6 @@
 import { createDecorator } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
-import noReentryWrapper from "../wrappers/noReentry"
+import { noReentry as noReentryWrapper } from "flex-tools"
  
 export interface NoReentryOptions extends DecoratorOptions { 
     silence?:boolean           // 默认true,当重入时默默地返回,=false时会触发错误

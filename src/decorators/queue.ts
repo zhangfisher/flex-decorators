@@ -10,10 +10,8 @@ import { createDecorator  } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
 import type {AllowNull, AsyncFunction } from "../types"
 import {DecoratorManager,  DecoratorManagerOptions, IDecoratorManager  } from "../manager"
-import { asyncSignal,IAsyncSignal } from "../asyncSignal"
-import { applyParams, delay,  isFunction } from "../utils"
-import timeoutWrapper from "../wrappers/timeout"
-import { LiteEventEmitter } from "../liteEventEmitter"
+import { FlexEvent, applyParams, delay,asyncSignal,IAsyncSignal,timeout as timeoutWrapper } from "flex-tools"
+import { isFunction } from "../utils" 
 
 export type QueueFailureBehaviour  = "ignore" | "retry" | "requeue"
 export type QueueOverflowOptions = 'discard' | 'overlap' | 'slide' 
@@ -141,7 +139,7 @@ export class QueueTaskDispatcher{
     #options:Required<QueueOptions>
     #running:boolean = false
     #isIdle:boolean = false
-    #eventemitter:LiteEventEmitter
+    #eventemitter:FlexEvent
     #method:Function
     #instance:object
     constructor(instance:object, method:Function, options: QueueOptions ){
@@ -157,7 +155,7 @@ export class QueueTaskDispatcher{
             failure      : "ignore"
         },options) as Required<QueueOptions>
         this.#method = method
-        this.#eventemitter = new LiteEventEmitter()  
+        this.#eventemitter = new FlexEvent()  
     }    
     get id(): string  { return String(this.#options.id) }
     get options(): Required<QueueOptions>{ return this.#options}
@@ -169,7 +167,7 @@ export class QueueTaskDispatcher{
     get failure(): QueueFailureBehaviour{ return this.#options.failure}
     get bufferLength(): number{ return this.#options.length }
     get bufferOverflow(): QueueOverflowOptions{ return this.#options.overflow} 
-    get eventemitter():LiteEventEmitter{ return this.#eventemitter }
+    get eventemitter():FlexEvent{ return this.#eventemitter }
     get instance(){return this.#instance}
     get tasks():QueueingTask[]{return this.#tasks}
 
@@ -178,7 +176,7 @@ export class QueueTaskDispatcher{
         if(timeout>0){
             finalMethod = timeoutWrapper(finalMethod as AsyncFunction,{value:this.timeout,default:this.options.default})
         }
-        return  await finalMethod()
+        return await finalMethod()
     }   
     _checkForIdle(){ 
         this.#isIdle = this.#tasks.length===0
@@ -326,7 +324,7 @@ export class QueueTaskDispatcher{
      */
     async waitForIdle(){
         if(this.#isIdle) return 
-        await this.#eventemitter.wait("idle")
+        await this.#eventemitter.waitFor("idle")
     }    
     on(event:string,callback:Function){
         return this.#eventemitter.on(event,callback)
