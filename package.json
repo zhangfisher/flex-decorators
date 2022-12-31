@@ -15,8 +15,70 @@
         "dist/",
         "./"
     ],
+    "exports":{
+        ".":{
+            "types":"./dist/index.d.ts",
+            "require":"./dist/index.js",
+            "import":"./dist/index.mjs"
+        },
+        "./timeout":{
+            "types":"./dist/decorators/timeout.d.ts",
+            "require":"./dist/decorators/timeout.js",
+            "import":"./dist/decorators/timeout.mjs"
+        },
+        "./deprecate":{
+            "types":"./dist/decorators/deprecate.d.ts",
+            "require":"./dist/decorators/deprecate.js",
+            "import":"./dist/decorators/deprecate.mjs"
+        },
+        "./cache":{
+            "types":"./dist/decorators/cache.d.ts",
+            "require":"./dist/decorators/cache.js",
+            "import":"./dist/decorators/cache.mjs"
+        },
+        "./debounce":{
+            "types":"./dist/decorators/debounce.d.ts",
+            "require":"./dist/decorators/debounce.js",
+            "import":"./dist/decorators/debounce.mjs"
+        },
+        "./memorize":{
+            "types":"./dist/decorators/memorize.d.ts",
+            "require":"./dist/decorators/memorize.js",
+            "import":"./dist/decorators/memorize.mjs"
+        },
+        "./noReentry":{
+            "types":"./dist/decorators/noReentry.d.ts",
+            "require":"./dist/decorators/noReentry.js",
+            "import":"./dist/decorators/noReentry.mjs"
+        },
+        "./queue":{
+            "types":"./dist/decorators/queue.d.ts",
+            "require":"./dist/decorators/queue.js",
+            "import":"./dist/decorators/queue.mjs"
+        },
+        "./reliable":{
+            "types":"./dist/decorators/reliable.d.ts",
+            "require":"./dist/decorators/reliable.js",
+            "import":"./dist/decorators/reliable.mjs"
+        },
+        "./retry":{
+            "types":"./dist/decorators/retry.d.ts",
+            "require":"./dist/decorators/retry.js",
+            "import":"./dist/decorators/retry.mjs"
+        },
+        "./throttle":{
+            "types":"./dist/decorators/throttle.d.ts",
+            "require":"./dist/decorators/throttle.js",
+            "import":"./dist/decorators/throttle.mjs"
+        },
+        "./verifyArgs":{
+            "types":"./dist/decorators/verifyArgs.d.ts",
+            "require":"./dist/decorators/verifyArgs.js",
+            "import":"./dist/decorators/verifyArgs.mjs"
+        }
+    },
     "dependencies": {
-        "flex-tools": "^1.0.8",
+        "flex-tools": "^1.0.11",
         "reflect-metadata": "^0.1.13",
         "throttle-debounce": "^5.0.0"
     },

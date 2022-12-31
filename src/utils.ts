@@ -45,12 +45,4 @@ export function mixinArray(toArray: any[],fromArray: any[]){
     })
     return toArray
 }
-
-/**
- * 首字符大写
- * @param str 
- */
-export function firstUpperCase(str:String):string{
-    return str[0].toUpperCase()+str.substring(1)
-}
  

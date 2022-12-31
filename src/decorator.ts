@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { DecoratorManager,IDecoratorManager, createManagerDecorator, DecoratorManagerStatus   } from './manager';
-import {pick,firstUpperCase } from "./utils"
+import {pick } from "./utils"
 import type {ManagerDecoratorCreator,DecoratorManagerOptions}  from "./manager"
 import type { Constructor, ImplementOf, WithReturnFunction } from "./types"
 import { isDiff,isClass, isAsyncFunction } from "flex-tools"
@@ -74,8 +74,7 @@ export interface IDecoratorOptionsReader{
 
 export interface DecoratorOptionsReader<T>{
     (instance:Object): Function | undefined
-}
-
+} 
 
 /**
  * 为装饰器参数创建一个访问代理，用来从当前实例中读取装饰器参数
@@ -86,7 +85,7 @@ function getDecoratorOptionsReader<T>(options:T,methodName:string | symbol,decor
     // this指向的是被装饰的类实例
     return function(this:any){
         const getDefaultDecoratorOptionsMethod="getDecoratorOptions"
-        const getDecoratorOptionsMethodName = `get${firstUpperCase(decoratorName)}DecoratorOptions`
+        const getDecoratorOptionsMethodName = `get${decoratorName.firstUpper()}DecoratorOptions`
         try{
             if(getDecoratorOptionsMethodName in this){
                 return (this as any)[getDecoratorOptionsMethodName].call(this,options,methodName,decoratorName) 
@@ -463,7 +462,7 @@ export function createDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFA
             }     
             // 检查get<decoratorName>DecoratorOptions和getDecoratorOptions是否是异步方法
             methodContext.asyncOptionsReader = 
-                isAsyncFunction((target as any)[`get${firstUpperCase(decoratorName)}DecoratorOptions`]) 
+                isAsyncFunction((target as any)[`get${decoratorName.firstUpper()}DecoratorOptions`]) 
                 || isAsyncFunction((target as any)[`getDecoratorOptions}`]) 
 
             // 1. 处理装饰器参数：

@@ -3,15 +3,14 @@ import { defineConfig } from 'tsup'
 export default defineConfig({
     entry: [
         'src/*.ts',
-        'src/decorators/*.ts',
-        'src/wrappers/*.ts'
+        'src/decorators/*.ts'
     ],
     format: ['cjs', 'esm'],
     dts: true,
     splitting: true,
     sourcemap: true,
     clean: true,
-    treeshake:false,  
+    treeshake:true,   
     banner: {
         js: `/**
 *        
