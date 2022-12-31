@@ -11,5 +11,13 @@
 - 引入`装饰器管理器`功能来处理公共的装饰器逻辑
 - 内置一些功能强大开箱即用的常用装饰器
 - 核心代码`90%+`测试覆盖
+ 
 
-> **推荐：** [基于Nodejs/React/Vue的一键国际化解决方案](https://zhangfisher.github.io/voerka-i18n/)
+# **开源推荐：** 
+
+- **`VoerkaI18n`**: [基于Nodejs/React/Vue的一键国际化解决方案](https://zhangfisher.github.io/voerka-i18n/)
+- **`Logsets`**: [命令行应用增强输出库](https://zhangfisher.github.io/logsets/)
+- **`AutoPub`**:  [基于pnpm/monorepo的自动发包工具](https://zhangfisher.github.io/autopub/)
+- **`FlexDecorators`**:  [JavaScript/TypeScript装饰器开发库](https://zhangfisher.github.io/flex-decorators/)
+- **`FlexState`**:  [有限状态机](https://zhangfisher.github.io/flexstate/)
+- **`FlexTools`**:  [实用工具函数库](https://zhangfisher.github.io/flex-tools/)

@@ -1,5 +1,5 @@
 import { expect, test, beforeEach,beforeAll } from 'vitest'
-import { delay } from "../utils"
+import { delay } from "flex-tools"
 import {
     verifyArgs
 } from "../decorators/verifyArgs"

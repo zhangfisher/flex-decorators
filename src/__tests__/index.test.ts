@@ -3,16 +3,13 @@ import {
     createDecorator,getDecorators,DecoratorOptions ,
     DecoratorManager
 } from "../index" 
+import {delay } from "flex-tools"
 
 import { 
     timeout,TimeoutOptions,ITimeoutDecoratorOptionsReader 
 } from "../decorators" 
 
-
-async function delay(ms:number=10){
-    return new Promise(resolve =>setTimeout(resolve,ms))
-}
-
+ 
 let logs:string[] = [];
 
 interface logOptions  {

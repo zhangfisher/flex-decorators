@@ -3,6 +3,7 @@ import {
     createDecorator,getDecorators,DecoratorOptions ,
     resetMethodDecorator,
 } from "../index" 
+import {delay } from "flex-tools"
 
 import { 
     timeout,TimeoutOptions,ITimeoutDecoratorOptionsReader,
@@ -10,10 +11,7 @@ import {
     noReentry,debounce,throttle
 } from "../decorators" 
 
-
-async function delay(ms:number=10){
-    return new Promise(resolve =>setTimeout(resolve,ms))
-}
+ 
 
 let logs:string[] = [];
 
