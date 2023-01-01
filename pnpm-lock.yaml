@@ -7,7 +7,7 @@ specifiers:
   '@vitest/ui': ^0.23.4
   ansi-colors: ^4.1.3
   docsify: ^4.13.0
-  flex-tools: ^1.0.19
+  flex-tools: ^1.0.20
   lodash: ^4.17.21
   reflect-metadata: ^0.1.13
   throttle-debounce: ^5.0.0
@@ -18,7 +18,7 @@ specifiers:
   vitest: ^0.23.4
 
 dependencies:
-  flex-tools: 1.0.19
+  flex-tools: 1.0.20
   lodash: 4.17.21
   reflect-metadata: 0.1.13
   throttle-debounce: 5.0.0
@@ -843,8 +843,8 @@ packages:
       path-exists: 4.0.0
     dev: true
 
-  /flex-tools/1.0.19:
-    resolution: {integrity: sha512-3RuTndWZmLpBZMDlXuVFwIWLauu2W1WjhJsorqSLjAbUdTpXtq/XAneFCOKCXZFNKdvQ2hQ3aSRoFJwX9ZqdLg==}
+  /flex-tools/1.0.20:
+    resolution: {integrity: sha512-ZYH0C4aVnIV7tFy0Jr8AmBxvpgqAXqrLfK+bPYt302xZVucMIayOQ/05SETJDjusljJBWkzBOnQBEuP7Clh/Tg==}
     dependencies:
       lodash: 4.17.21
     dev: false
