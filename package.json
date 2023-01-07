@@ -1,6 +1,6 @@
 {
     "name": "flex-decorators",
-    "version": "1.0.16",
+    "version": "1.0.17",
     "main": "./dist/index.js",
     "module": "./dist/index.mjs",
     "types": "./dist/index.d.ts",
@@ -9,7 +9,7 @@
     "scripts": {
         "build": "tsup",
         "test": "pnpm vitest",
-        "release": "tsup && npm publish"
+        "release": "tsup && npm version patch && npm publish"
     },
     "files": [
         "dist/",
@@ -78,7 +78,7 @@
         }
     },
     "dependencies": {
-        "flex-tools": "^1.0.20",
+        "flex-tools": "^1.0.24",
         "lodash": "^4.17.21",
         "reflect-metadata": "^0.1.13",
         "throttle-debounce": "^5.0.0"

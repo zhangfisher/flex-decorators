@@ -5,7 +5,7 @@
 import { hasOwnProperty } from "./utils";
 import { asyncSignal, IAsyncSignal,getPropertyNames } from "flex-tools"
 import type { AllowNull,TypedClassDecorator, Constructor, ImplementOf} from "./types"; 
-import { DecoratorContext, DecoratorMethodContext } from "./decorator";
+import { DecoratorContext, DecoratorMethodContext, DecoratorOptions } from "./decorator";
 
 /**
  * getDecorators返回的当前实例的装饰器信息
@@ -17,8 +17,8 @@ export type DecoratorList = {
     [decoratorName:string]:{[methodName:string]:any[]} 
 } 
 
-export type DecoratedMethodList = {
-    [methodName:string]:object[]
+export type DecoratedMethodList<T extends DecoratorOptions=DecoratorOptions> = {
+    [methodName:string]:T[]
 }
 
 
@@ -35,7 +35,7 @@ const excludedPropertyNames = [
  * @param decoratorName   装饰器名称 
  * @returns {DecoratorList}    {[装饰器名称]:{[方法名称]:[{[装饰器参数],[装饰器参数],...}]}}
  */
-export function getDecorators(instance: any,decoratorName?:string,options?:{cache?:boolean}):DecoratorList | DecoratedMethodList{
+export function getDecorators<T extends DecoratorOptions=DecoratorOptions>(instance: any,decoratorName?:string,options?:{cache?:boolean}):DecoratorList | DecoratedMethodList<T>{
     let opts = Object.assign({
         cache: true,
     },options)
@@ -94,7 +94,7 @@ export function getDecorators(instance: any,decoratorName?:string,options?:{cach
         instance.constructor.__DECORATORS__ = metadatas
     }
 
-    return decoratorName ? (metadatas[decoratorName]  as DecoratedMethodList): (metadatas as DecoratorList)
+    return decoratorName ? (metadatas[decoratorName]  as DecoratedMethodList<T>): (metadatas as DecoratorList)
 } 
 
 export interface DecoratorManagerOptions{

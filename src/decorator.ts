@@ -1,6 +1,6 @@
 import "reflect-metadata";
 import { DecoratorManager,IDecoratorManager, createManagerDecorator, DecoratorManagerStatus   } from './manager';
-import {pick } from "./utils"
+import {firstUpper, pick } from "./utils"
 import type {ManagerDecoratorCreator,DecoratorManagerOptions}  from "./manager"
 import type { Constructor, ImplementOf, WithReturnFunction } from "./types"
 import { isDiff,isClass, isAsyncFunction } from "flex-tools"
@@ -462,7 +462,7 @@ export function createDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFA
             }     
             // 检查get<decoratorName>DecoratorOptions和getDecoratorOptions是否是异步方法
             methodContext.asyncOptionsReader = 
-                isAsyncFunction((target as any)[`get${decoratorName.firstUpper()}DecoratorOptions`]) 
+                isAsyncFunction((target as any)[`get${firstUpper(decoratorName)}DecoratorOptions`]) 
                 || isAsyncFunction((target as any)[`getDecoratorOptions}`]) 
 
             // 1. 处理装饰器参数：
