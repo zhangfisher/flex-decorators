@@ -10,8 +10,20 @@ export interface ListDecoratorCreator<T,M,D> {
 
 /**
  * 创建一个简单的装饰器，不包括管理器，仅注入一些装饰元数据，以可以通过
+ * 
+ * 
+ * DEFAULT_OPTION  装饰器参数中的默认项类型
+ * 
+ * 比如options={a:nnumber,b:string}, 而其中允许b是默认参数
+ * 也就是装饰器可以使用
+ * @myDecorator({a,b}) 
+ * 也可以使用@myDecorator(b)       简化形式时
+ * 
+ * 
+ * 
+ * 
  */
- export function createLiteDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFAULT_OPTION=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): ListDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>{
+ export function createLiteDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFAULT_OPTION=never>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): ListDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>{
     let createOptions:createLiteDecoratorOptions<OPTIONS> = Object.assign({},opts)
     // 保存装饰器上下文信息
     let decoratorContext:DecoratorContext = {

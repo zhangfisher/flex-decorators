@@ -415,7 +415,7 @@ function createDecoratorManager(decoratorName: string,managerOptions: DecoratorM
  * 
  */
  
-export function createDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFAULT_OPTION=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createDecoratorOptions<OPTIONS,METHOD>): DecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>{
+export function createDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFAULT_OPTION=never>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createDecoratorOptions<OPTIONS,METHOD>): DecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>{
     let createOptions:createDecoratorOptions<OPTIONS,METHOD> = Object.assign({
         singleton:true,
         autoReWrapper:true,
