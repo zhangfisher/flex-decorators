@@ -3,7 +3,7 @@ import { DecoratorManager,IDecoratorManager, createManagerDecorator   } from './
 import {firstUpper, pick } from "./utils"
 import type {ManagerDecoratorCreator,DecoratorManagerOptions}  from "./manager"
 import type { Constructor, ImplementOf, WithReturnFunction } from "flex-tools"
-import { isDiff,isClass, isAsyncFunction } from "flex-tools"
+import { isDiff, isClass, isAsyncFunction, assignObject } from 'flex-tools';
 
 export type DecoratorMethodWrapperOptions<T> =T extends (DecoratorOptionsReader<T>) ? DecoratorOptionsReader<T> : T
 
@@ -12,8 +12,8 @@ export type DecoratorMethodWrapperOptions<T> =T extends (DecoratorOptionsReader<
  * 用来对原始方法进行包装并返回包装后的方法
  */
 export type DecoratorMethodWrapper<Options,Method> = (
-    (method:Method ,options:Options,manager?:IDecoratorManager )=>Method )
-    | ((method:Method , options:Options,manager:IDecoratorManager, target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<Method>)=>Method 
+    (method:Method ,options:Required<Options>,manager?:IDecoratorManager )=>Method )
+    | ((method:Method , options:Required<Options>,manager:IDecoratorManager, target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<Method>)=>Method 
 )
 
 
@@ -41,8 +41,8 @@ export interface DecoratorOptions {
 
 export type TypedMethodDecorator<T> = (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
 
-export interface DecoratorCreator<Options,Method,DefaultOption> {
-    (options?:Options | DefaultOption):TypedMethodDecorator<Method> 
+export interface DecoratorCreator<Options,Method,DefaultOptionType> {
+    (options?:Options | DefaultOptionType):TypedMethodDecorator<Method> 
     createManagerDecorator<Manager extends IDecoratorManager,ManagerOptions extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:ManagerOptions):ManagerDecoratorCreator<Manager,ManagerOptions>
     getManager():IDecoratorManager | undefined
     destroyManager():Awaited<Promise<any>>
@@ -415,8 +415,8 @@ function createDecoratorManager(decoratorName: string,managerOptions: DecoratorM
  * 
  */
  
-export function createDecorator<Options extends DecoratorOptions,Method=any,DefaultOption=never>(decoratorName:string,defaultOptions?:Options,opts?:createDecoratorOptions<Options,Method>): DecoratorCreator<Options,Method,DefaultOption>{
-    let createOptions:createDecoratorOptions<Options,Method> = Object.assign({
+export function createDecorator<Options extends DecoratorOptions,DefaultOption=never,Method=any>(decoratorName:string,defaultOptions?:Options,opts?:createDecoratorOptions<Options,Method>): DecoratorCreator<Options,Method,DefaultOption>{
+    let createOptions:createDecoratorOptions<Options,Method> = assignObject({
         singleton:true,
         autoReWrapper:true,
         asyncWrapper:'auto'
@@ -448,7 +448,8 @@ export function createDecorator<Options extends DecoratorOptions,Method=any,Defa
                 manager.start().catch(() =>{ })
             }
         }
-    }     
+    }    
+    
     // T:装饰器参数,D:装饰器默认值的类型
     function decorator(options?: Options | DefaultOption ):TypedMethodDecorator<Method> {        
         return function(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<Method>):TypedPropertyDescriptor<Method> | void {            

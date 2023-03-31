@@ -47,7 +47,7 @@ const logProWrapper = function(method:logProMethod,options:logOptions):logProMet
         return ""
     }
 }
-let logPro = createDecorator<logOptions,logProMethod>("logPro",{},{
+let logPro = createDecorator<logOptions,any,logProMethod>("logPro",{},{
     wrapper:logProWrapper
 })
 
@@ -204,7 +204,7 @@ test("从实例中读取所有装饰器参数",async ()=>{
 
 test("从实例中读取被指定装饰器装饰的方法",async ()=>{
     let aa1 = new AA()
-    let logManager = log.getManager()
+    let logManager = log.getManager() as LogManager
     let methods = logManager?.getMethods(aa1)
     if(methods){
         expect(Object.keys(methods)).toStrictEqual(["print","print2"]) 

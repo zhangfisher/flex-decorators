@@ -11,7 +11,7 @@ export interface IDebounceDecoratorOptionsReader {
     getDebounceDecoratorOptions(options:DebounceOptions,methodName:string | symbol,decoratorName:string):DebounceOptions
 }
 
-export const debounce = createDecorator<DebounceOptions>("debounce",{interval:1000,atBegin:true},{
+export const debounce = createDecorator<DebounceOptions,number>("debounce",{interval:1000,atBegin:true},{
     wrapper: function(method:AsyncFunction,options:DebounceOptions):Function{
         return debounceWrapper(method,options)
     },

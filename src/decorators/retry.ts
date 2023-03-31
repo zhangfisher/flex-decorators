@@ -12,7 +12,7 @@ export interface IRetryDecoratorOptionsReader {
     getRetryDecoratorOptions(options:RetryOptions,methodName:string | symbol,decoratorName:string):RetryOptions
 }
 
-export const retry = createDecorator<RetryOptions>("retry",{count:1,interval:0,default:null},{
+export const retry = createDecorator<RetryOptions,RetryOptions['count']>("retry",{count:1,interval:0,default:null},{
     wrapper: function(method:Function,options:RetryOptions):Function{
         return retryWrapper(method,options)
     },

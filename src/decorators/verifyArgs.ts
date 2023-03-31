@@ -29,7 +29,7 @@ import { mixinArray } from "../utils"
      getVerifyArgsDecoratorOptions(options:VerifyArgsOptions,methodName:string | symbol,decoratorName:string):VerifyArgsOptions
  }
   
- export const verifyArgs = createDecorator<VerifyArgsOptions>("verifyArgs",{validate:undefined},{
+ export const verifyArgs = createDecorator<VerifyArgsOptions,VerifyArgsOptions['validate']>("verifyArgs",{validate:undefined},{
      wrapper: function(method:Function,options:VerifyArgsOptions):Function{
         let validateType = typeof options.validate
         if(validateType=="function"){

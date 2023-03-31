@@ -18,7 +18,7 @@ export interface IGetCacheDecoratorOptions {
      getCacheDecoratorOptions(options:CacheOptions,methodName:string | symbol,decoratorName:string):CacheOptions
 }
  
-export const cache = createDecorator<CacheOptions>("cache",
+export const cache = createDecorator<CacheOptions,number>("cache",
      {
          expires:0,                     // 生存期,以ms为单位，当超过时间后指点
          enable:true,                      
@@ -29,7 +29,7 @@ export const cache = createDecorator<CacheOptions>("cache",
                 return method
              }             
          }, 
-         defaultOptionKey:"size"
+         defaultOptionKey:"expires"
      })
  
  

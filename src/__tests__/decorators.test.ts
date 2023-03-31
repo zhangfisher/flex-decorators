@@ -316,7 +316,7 @@ test("手动重置装饰器重新包装函数",async ()=>{
         items?:number[]
     }
     let count = createDecorator<countOptions>("count", {max:10,prefix:"Hello",items:[1,2]},{
-        wrapper:(method:Function,options:countOptions)=>{
+        wrapper:(method:Function,options:Required<countOptions>)=>{
             let count = 0;  // 在一个闭包中保存计数
             return function(this:any){
                 count++

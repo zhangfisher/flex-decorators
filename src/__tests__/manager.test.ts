@@ -3,7 +3,7 @@ import {
     createDecorator    
 } from "../index"  
 import { DecoratorContext, DecoratorMethodContext, DecoratorOptions } from '../decorator';
-import { DecoratorManager, DecoratorManagerOptions, IDecoratorManagerHook } from '../manager';
+import { DecoratorManager, DecoratorManagerOptions, IDecoratorManager, IDecoratorManagerHook } from '../manager';
 
 interface CacheOptions extends DecoratorOptions{
     ttl?:number
@@ -57,7 +57,7 @@ class CacheManager extends DecoratorManager implements IDecoratorManagerHook{
 }
 //
 const cache = createDecorator<CacheOptions>("cache",{ttl:0,key:undefined},{    
-    wrapper:function(method:Function,options:CacheOptions,manager?:DecoratorManager):Function {
+    wrapper:function(method:Function,options:Required<CacheOptions>,manager?:IDecoratorManager):Function {
         return async function(this:any){
             let key= String(options.key || options.id)
             let result
@@ -121,9 +121,10 @@ class SyncCacheManager extends DecoratorManager{
 type cacheableMethod = (...args: any[]) => any
 const syncCache = createDecorator<
     CacheOptions,
+    any,
     cacheableMethod
 >("syncCache",{ttl:0,key:undefined},{    
-    wrapper:function(method:Function,options:CacheOptions,manager?:DecoratorManager):cacheableMethod {
+    wrapper:function(method:cacheableMethod,options:Required<CacheOptions>,manager?:IDecoratorManager):cacheableMethod {
         return function(this:any){
             let key= String(options.key || options.id)
             let result
@@ -131,7 +132,7 @@ const syncCache = createDecorator<
                 result  =  (manager as SyncCacheManager).get(key)
             }
             if(result==undefined){
-                result = method.apply(this,arguments)
+                result = method.apply(this,[...arguments])
                 if(manager) (manager as SyncCacheManager).set(key,result)
             }
             return  result

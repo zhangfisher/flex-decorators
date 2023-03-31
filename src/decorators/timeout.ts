@@ -12,7 +12,7 @@ export interface ITimeoutDecoratorOptionsReader {
     getTimeoutDecoratorOptions:((options:TimeoutOptions,methodName:string | symbol,decoratorName:string)=>TimeoutOptions) | ((options:TimeoutOptions,methodName:string | symbol,decoratorName:string)=>Promise<TimeoutOptions>)
 }
 
-export const timeout = createDecorator<TimeoutOptions,AsyncFunction,number>("timeout",
+export const timeout = createDecorator<TimeoutOptions,TimeoutOptions['value'],AsyncFunction>("timeout",
     {
         value:0,                            
         default:null

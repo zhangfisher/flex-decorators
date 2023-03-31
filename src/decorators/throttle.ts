@@ -13,7 +13,7 @@ export interface IThrottleDecoratorOptionsReader {
     getThrottleDecoratorOptions(options:ThrottleOptions,methodName:string | symbol,decoratorName:string):ThrottleOptions
 }
 
-export const throttle = createDecorator<ThrottleOptions>("throttle",
+export const throttle = createDecorator<ThrottleOptions,ThrottleOptions['interval']>("throttle",
     {
         interval    : 1000,
         noTrailing  : false,          // 最后一次调用时是否执行

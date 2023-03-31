@@ -415,7 +415,7 @@ export class QueueManager extends DecoratorManager{
 }
 
 
-export const queue = createDecorator<QueueOptions,any,number>("queue",
+export const queue = createDecorator<QueueOptions,QueueOptions['length'],any>("queue",
     {
         length:8,
         overflow     : 'discard',

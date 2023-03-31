@@ -34,7 +34,7 @@ export interface IMemorizeDecoratorOptionsReader {
     getMemorizeDecoratorOptions(options:MemorizeOptions,methodName:string | symbol,decoratorName:string):MemorizeOptions
 }
 
-export const memorize = createDecorator<MemorizeOptions>("memorize",{hash:undefined,expires:0},{
+export const memorize = createDecorator<MemorizeOptions,MemorizeOptions['hash']>("memorize",{hash:undefined,expires:0},{
     wrapper: function(method:Function,options:MemorizeOptions):Function{
          return memorizeWrapper.call(this,method,options);        
     },

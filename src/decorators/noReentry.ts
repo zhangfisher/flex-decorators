@@ -11,7 +11,7 @@ export interface INoReentryDecoratorOptionsReader {
 }
 
 
-export const noReentry = createDecorator<NoReentryOptions>("noReentry",{silent:true},{
+export const noReentry = createDecorator<NoReentryOptions,NoReentryOptions['silent']>("noReentry",{silent:true},{
     wrapper: function(method:Function,options:NoReentryOptions):Function{
         return noReentryWrapper(method,options)
     },

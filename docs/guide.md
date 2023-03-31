@@ -28,16 +28,16 @@ export interface CacheOptions extends DecoratorOptions{
 `createDecorator`方法函数签名如下：
 
 ```typescript
-function createDecorator<T extends DecoratorOptions,METHOD=any,D=any>(
+function createDecorator<Options extends DecoratorOptions,DefaultOption=never,Method=any>(
     decoratorName:string,
-    defaultOptions?:T,
-    opts?:createDecoratorOptions<T,METHOD>
-): DecoratorCreator<T,METHOD,D>
+    defaultOptions?:Options,
+    opts?:createDecoratorOptions<Options,Method>): DecoratorCreator<Options,Method,DefaultOption>
 ```
+
 **`createDecorator`方法具有三个泛型类型：**
--    `OPTIONS`: 装饰器参数
--    `METHOD`: 被装饰的函数签名
--    `DEFAULT_OPTION`: 默认装饰器参数值类型
+-    `Options`: 装饰器参数
+-    `Method`: 被装饰的函数签名
+-    `DefaultOption`: 默认装饰器参数值类型
 
 **`createDecorator`方法具有三个参数：**
 
