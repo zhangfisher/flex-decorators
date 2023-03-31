@@ -1,7 +1,7 @@
 import { createDecorator } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
 import reliableWrapper from "../wrappers/reliable"
-import type { AsyncFunction } from "../types"
+import type { AsyncFunction } from "flex-tools"
  
 export interface ReliableOptions extends DecoratorOptions { 
     timeout         : number,                            // 执行失败超时,默认为1分钟

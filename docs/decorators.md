@@ -121,7 +121,7 @@ export interface IMemorizeDecoratorOptionsReader {
 ```typescript
 
 export interface NoReentryOptions extends DecoratorOptions { 
-    silence?:boolean           // 默认true,当重入时默默地返回,=false时会触发错误
+    silent?:boolean           // 默认true,当重入时默默地返回,=false时会触发错误
 }
 
 export interface INoReentryDecoratorOptionsReader {

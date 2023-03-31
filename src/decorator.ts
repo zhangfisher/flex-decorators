@@ -1,8 +1,8 @@
 import "reflect-metadata";
-import { DecoratorManager,IDecoratorManager, createManagerDecorator, DecoratorManagerStatus   } from './manager';
+import { DecoratorManager,IDecoratorManager, createManagerDecorator   } from './manager';
 import {firstUpper, pick } from "./utils"
 import type {ManagerDecoratorCreator,DecoratorManagerOptions}  from "./manager"
-import type { Constructor, ImplementOf, WithReturnFunction } from "./types"
+import type { Constructor, ImplementOf, WithReturnFunction } from "flex-tools"
 import { isDiff,isClass, isAsyncFunction } from "flex-tools"
 
 export type DecoratorMethodWrapperOptions<T> =T extends (DecoratorOptionsReader<T>) ? DecoratorOptionsReader<T> : T
@@ -11,9 +11,9 @@ export type DecoratorMethodWrapperOptions<T> =T extends (DecoratorOptionsReader<
  * 函数包装器
  * 用来对原始方法进行包装并返回包装后的方法
  */
-export type DecoratorMethodWrapper<T,M> = (
-    (method:M ,options:T,manager?:IDecoratorManager )=>M )
-    | ((method:M , options:T,manager:IDecoratorManager, target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<M>)=>M 
+export type DecoratorMethodWrapper<Options,Method> = (
+    (method:Method ,options:Options,manager?:IDecoratorManager )=>Method )
+    | ((method:Method , options:Options,manager:IDecoratorManager, target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<Method>)=>Method 
 )
 
 
@@ -41,9 +41,9 @@ export interface DecoratorOptions {
 
 export type TypedMethodDecorator<T> = (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
 
-export interface DecoratorCreator<T,M,D> {
-    (options?:T | D):TypedMethodDecorator<M> 
-    createManagerDecorator<X extends IDecoratorManager,O extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:O):ManagerDecoratorCreator<X,O>
+export interface DecoratorCreator<Options,Method,DefaultOption> {
+    (options?:Options | DefaultOption):TypedMethodDecorator<Method> 
+    createManagerDecorator<Manager extends IDecoratorManager,ManagerOptions extends DecoratorManagerOptions>(managerClass :typeof DecoratorManager,  defaultOptions?:ManagerOptions):ManagerDecoratorCreator<Manager,ManagerOptions>
     getManager():IDecoratorManager | undefined
     destroyManager():Awaited<Promise<any>>
 }
@@ -57,8 +57,8 @@ export type DecoratorManagerCreateFinalOptions = {
 
 export type DecoratorManagerCreateOptions = DecoratorManagerCreateFinalOptions | IDecoratorManager| (ImplementOf<IDecoratorManager>)  | (typeof DecoratorManager) | WithReturnFunction<IDecoratorManager|typeof DecoratorManager| (ImplementOf<IDecoratorManager>)> | undefined
 
-export interface createDecoratorOptions<T,M>{
-    wrapper?:DecoratorMethodWrapper<T,M>
+export interface createDecoratorOptions<Options,Method>{
+    wrapper?:DecoratorMethodWrapper<Options,Method>
     singleton?:boolean                      // 指定方法上是否只能一个该装饰器,如果重复使用则会出错    
     defaultOptionKey?:string                // 默认配置参数的字段名称,当只提供一个参数时,视为该字段值,如retry(10)=={count:10}
     // 当装饰器的默认参数是一个{}时，传入{}就会存在岐义，比如verifyArgs的defaultOptionKey='validate"
@@ -81,7 +81,7 @@ export interface DecoratorOptionsReader<T>{
  * @param options  默认器装饰器参数
  * @returns 
  */
-function getDecoratorOptionsReader<T>(options:T,methodName:string | symbol,decoratorName:string):DecoratorOptionsReader<T>{
+function getDecoratorOptionsReader<Options>(options:Options,methodName:string | symbol,decoratorName:string):DecoratorOptionsReader<Options>{
     // this指向的是被装饰的类实例
     return function(this:any){
         const getDefaultDecoratorOptionsMethod="getDecoratorOptions"
@@ -415,8 +415,8 @@ function createDecoratorManager(decoratorName: string,managerOptions: DecoratorM
  * 
  */
  
-export function createDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFAULT_OPTION=never>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createDecoratorOptions<OPTIONS,METHOD>): DecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>{
-    let createOptions:createDecoratorOptions<OPTIONS,METHOD> = Object.assign({
+export function createDecorator<Options extends DecoratorOptions,Method=any,DefaultOption=never>(decoratorName:string,defaultOptions?:Options,opts?:createDecoratorOptions<Options,Method>): DecoratorCreator<Options,Method,DefaultOption>{
+    let createOptions:createDecoratorOptions<Options,Method> = Object.assign({
         singleton:true,
         autoReWrapper:true,
         asyncWrapper:'auto'
@@ -448,11 +448,10 @@ export function createDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFA
                 manager.start().catch(() =>{ })
             }
         }
-    } 
-
+    }     
     // T:装饰器参数,D:装饰器默认值的类型
-    function decorator(options?: OPTIONS | DEFAULT_OPTION ):TypedMethodDecorator<METHOD> {        
-        return function(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<METHOD>):TypedPropertyDescriptor<METHOD> | void {            
+    function decorator(options?: Options | DefaultOption ):TypedMethodDecorator<Method> {        
+        return function(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<Method>):TypedPropertyDescriptor<Method> | void {            
             // 当前装饰方法的上下文对象,
             let methodContext:DecoratorMethodContext= {
                 class:target,
@@ -466,13 +465,13 @@ export function createDecorator<OPTIONS extends DecoratorOptions,METHOD=any,DEFA
                 || isAsyncFunction((target as any)[`getDecoratorOptions}`]) 
 
             // 1. 处理装饰器参数：
-            handleDecoratorOptions<OPTIONS>(decoratorContext,methodContext,options as OPTIONS)        
+            handleDecoratorOptions<Options>(decoratorContext,methodContext,options as Options)        
             // 2. 定义元数据, 如果多个装饰器元数据会合并后放在数组中
-            defineDecoratorMetadata<OPTIONS>(decoratorContext,methodContext)     
+            defineDecoratorMetadata<Options>(decoratorContext,methodContext)     
 
             // 3.对被装饰方法函数进行包装
             if(typeof opts?.wrapper=="function"){
-                descriptor.value = useCommonDecoratorWrapper<OPTIONS,METHOD>(decoratorContext,methodContext,<METHOD>descriptor.value)                
+                descriptor.value = useCommonDecoratorWrapper<Options,Method>(decoratorContext,methodContext,<Method>descriptor.value)                
             }   
             return descriptor            
         };         

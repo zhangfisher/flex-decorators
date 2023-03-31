@@ -8,7 +8,7 @@
  */
 import { createDecorator  } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
-import type {AllowNull, AsyncFunction } from "../types"
+import {AllowEmpty, assignObject, AsyncFunction, FlexEventListener } from "flex-tools"
 import {DecoratorManager,  DecoratorManagerOptions, IDecoratorManager  } from "../manager"
 import { FlexEvent, applyParams, delay,asyncSignal,IAsyncSignal,timeout as timeoutWrapper } from "flex-tools"
 import { isFunction } from "../utils" 
@@ -20,7 +20,7 @@ export interface QueueOptions extends DecoratorOptions {
     id?           : string
     length?       : number   
     overflow?     : QueueOverflowOptions                                        // 队列溢出时的处理方式,discard=丢弃,overlap=覆盖最后一条,slide=挤出最早一条
-    priority?     : AllowNull<(tasks:QueueTask[])=>QueueTask[]>  | string       // 优先级，当参数只有一个且是Object可以指定对象中的某个键值作为优先级,如果是多个参数，可以指定第几个参数作为排序
+    priority?     : AllowEmpty<(tasks:QueueTask[])=>QueueTask[]>  | string       // 优先级，当参数只有一个且是Object可以指定对象中的某个键值作为优先级,如果是多个参数，可以指定第几个参数作为排序
     failure?      : QueueFailureBehaviour                                       // 执行出错时的行为，ignore=什么都不做,retry=重试,requeue=重新排队，但是受retryCount限制
     retryCount?   : number
     retryInterval?: number
@@ -73,7 +73,7 @@ export class QueueTask{
         this.#status = QueueTaskStatus.Executing
     }
 
-    _onEndTask(error:Error | undefined,results:any){
+    _onEndTask({error,results}:{error:Error | undefined,results:any}){
         this.#status = QueueTaskStatus.Done
         this.#returns = error instanceof Error ? error : results
     }
@@ -103,13 +103,13 @@ export class QueueTask{
      * 函数执行完成后的回调
      * @param callback  (e,result)
      */
-    on(callback:Function){
+    on(callback:FlexEventListener){
         this.executor.on(`${this.id}:done`,callback)
     }
-    off(callback:Function){
+    off(callback:FlexEventListener){
         this.executor.off(`${this.id}:done`,callback)
     }
-    once(callback:Function){
+    once(callback:FlexEventListener){
         this.executor.once(`${this.id}:done`,callback)
     }
     cancel(){
@@ -144,7 +144,7 @@ export class QueueTaskDispatcher{
     #instance:object
     constructor(instance:object, method:Function, options: QueueOptions ){
         this.#instance = instance;
-        this.#options = Object.assign({
+        this.#options = assignObject({
             id           : 0,
             retryCount   : 0,
             retryInterval: 0,
@@ -219,7 +219,7 @@ export class QueueTaskDispatcher{
                     }finally{                        
                         task.runCount++
                         if(task instanceof QueueTask && i==totalRunCount-1){
-                            this.emit(`${task.id}:done`,hasError,results)                        
+                            this.emit(`${task.id}:done`,{error:hasError,results:results})                        
                         }
                     }
                 }   
@@ -326,17 +326,17 @@ export class QueueTaskDispatcher{
         if(this.#isIdle) return 
         await this.#eventemitter.waitFor("idle")
     }    
-    on(event:string,callback:Function){
+    on(event:string,callback:FlexEventListener){
         return this.#eventemitter.on(event,callback)
     }
-    off(event:string,callback:Function){
+    off(event:string,callback:FlexEventListener){
         return this.#eventemitter.off(event,callback)
     }
-    once(event:string,callback:Function){
+    once(event:string,callback:FlexEventListener){
         return this.#eventemitter.once(event,callback)
     }
-    emit(event:string,...args:any[]){
-        this.#eventemitter.emit(event,...args)
+    emit(event:string,arg?:any){
+        this.#eventemitter.emit(event,arg)
     }
 }
 

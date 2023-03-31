@@ -78,8 +78,7 @@
         }
     },
     "dependencies": {
-        "flex-tools": "^1.0.24",
-        "lodash": "^4.17.21",
+        "flex-tools": "^1.0.70",
         "reflect-metadata": "^0.1.13",
         "throttle-debounce": "^5.0.0"
     },

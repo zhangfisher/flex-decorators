@@ -4,7 +4,7 @@
 
 import { hasOwnProperty } from "./utils";
 import { asyncSignal, IAsyncSignal,getPropertyNames } from "flex-tools"
-import type { AllowNull,TypedClassDecorator, Constructor, ImplementOf} from "./types"; 
+import type { AllowEmpty,TypedClassDecorator, Constructor, ImplementOf} from "flex-tools"; 
 import { DecoratorContext, DecoratorMethodContext, DecoratorOptions } from "./decorator";
 
 /**
@@ -143,8 +143,8 @@ export class DecoratorManager implements IDecoratorManager{
     #options:DecoratorManagerOptions 
     #status: DecoratorManagerStatus = DecoratorManagerStatus.INITIAL        // 状态
     #instances:any[] = []                                                   // 保存装饰实例引用 
-    #runningSignal:AllowNull<IAsyncSignal>
-    #stopingSignal:AllowNull<IAsyncSignal>
+    #runningSignal:AllowEmpty<IAsyncSignal>
+    #stopingSignal:AllowEmpty<IAsyncSignal>
     constructor(decoratorName:string,options:DecoratorManagerOptions){
         this.#decoratorName=decoratorName
         this.#options = Object.assign({

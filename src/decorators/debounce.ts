@@ -1,6 +1,6 @@
 import { createDecorator } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
-import type {AsyncFunction } from "../types"
+import type {AsyncFunction } from "flex-tools"
 import debounceWrapper from "../wrappers/debounce"
 
 export interface DebounceOptions extends DecoratorOptions { 

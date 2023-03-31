@@ -1,4 +1,4 @@
-import type { AsyncFunction } from "../types";
+import type { AsyncFunction } from "flex-tools";
 import { noReentry,timeout,retry,memorize,applyParams } from "flex-tools"
 import debounce from "./debounce"
 import throttle from "./throttle"

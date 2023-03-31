@@ -311,7 +311,7 @@ test("手动重置装饰器重新包装函数",async ()=>{
     // 执行计数
     interface countOptions  {
         id?:number
-        max:number
+        max?:number
         prefix?:string
         items?:number[]
     }

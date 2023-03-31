@@ -1,5 +1,5 @@
 import {throttle as throttleFor} from 'throttle-debounce';
-import type { AsyncFunction } from "../types";
+import type { AsyncFunction } from "flex-tools";
 
 
 export default function throttle(fn:AsyncFunction,options:{interval:number,noLeading?:boolean,noTrailing?:boolean,debounceMode?: boolean}={interval:0,noTrailing:false}) {
