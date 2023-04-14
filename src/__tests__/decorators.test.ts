@@ -4,6 +4,7 @@ import {
     resetMethodDecorator,
 } from "../index" 
 import {delay } from "flex-tools"
+import { createLiteDecorator } from '../liteDecorator';
 
 import { 
     timeout,TimeoutOptions,ITimeoutDecoratorOptionsReader,
@@ -364,3 +365,32 @@ test("手动重置装饰器重新包装函数",async ()=>{
     }
     expect(x.current).toBe(0)
 })
+
+
+
+test("被装饰方法类型",async ()=>{
+    // 执行计数
+    interface countOptions  {
+        id?:number
+        max?:number
+        prefix?:string
+        items?:number[]
+    }
+    let count = createLiteDecorator<countOptions,any,(data:number)=>boolean | string>("count", {max:10,prefix:"Hello",items:[1,2]})
+    let cache = createDecorator<countOptions,any,(data:number)=>number>("cache", {max:10,prefix:"Hello",items:[1,2]})
+
+    class MyClass{
+
+        @count()
+        test(data:number){
+            return true
+        }
+        @cache()
+        getUser(){
+            return 1
+        }
+    }
+    
+})
+
+
