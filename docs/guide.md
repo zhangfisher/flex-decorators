@@ -45,6 +45,39 @@ function createDecorator<Options extends DecoratorOptions,DefaultOption=never,Me
 -    `defaultOptions`: 默认的装饰器参数,要尽可能为所有参数提供默认值
 -    `opts`: 创建装饰器控制参数
 
+### 创建简易装饰器
+
+如果创建一个不对原始方法进行任何处理的装饰器，可以使用`createLiteDecorator`方法来创建。
+
+该方法不会对原始方法进行任何处理，只是简单地做一下方法修饰,然后在类中就可以使用`getDecorators`方法来获取被装饰的方法。
+
+```typescript
+
+ export function createLiteDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPTION=any,METHOD=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>
+```
+
+使用方法如下:
+```typescript
+import { createLiteDecorator } from "flex-decorators"
+
+const cache = createLiteDecorator("cache")
+
+class MyClass{
+    constructor(){
+        const decorators = getDecorators(this,"cache")    
+        // {getUsers:[{a:1}],getPost:[{b:1}]}
+    }
+    @cache({a:1})
+    getUsers(){
+
+    }
+    @cache({b:1})
+    getPost(){
+
+    }
+}
+```
+
 ## 装饰器参数
 
 大部份的装饰器均具有若干配置参数，`flex-decorators`规定装饰器参数类型应该继承自`DecoratorOptions`，如下：

@@ -39,7 +39,7 @@ export interface DecoratorOptions {
     enable?: boolean                            // 是否启用或关闭装饰器
 }
 
-export type TypedMethodDecorator<T> = (target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<T>) => TypedPropertyDescriptor<T> | void;
+export type TypedMethodDecorator<T> = <U extends T>(target: Object, propertyKey: string | symbol, descriptor: TypedPropertyDescriptor<U>) => TypedPropertyDescriptor<U> | void;
 
 export interface DecoratorCreator<Options,Method,DefaultOptionType> {
     (options?:Options | DefaultOptionType):TypedMethodDecorator<Method> 
@@ -452,7 +452,7 @@ export function createDecorator<Options extends DecoratorOptions,DefaultOption=n
     
     // T:装饰器参数,D:装饰器默认值的类型
     function decorator(options?: Options | DefaultOption ):TypedMethodDecorator<Method> {        
-        return function(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<Method>):TypedPropertyDescriptor<Method> | void {            
+        return function<U extends Method>(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<U>):TypedPropertyDescriptor<U> | void {            
             // 当前装饰方法的上下文对象,
             let methodContext:DecoratorMethodContext= {
                 class:target,
@@ -472,7 +472,7 @@ export function createDecorator<Options extends DecoratorOptions,DefaultOption=n
 
             // 3.对被装饰方法函数进行包装
             if(typeof opts?.wrapper=="function"){
-                descriptor.value = useCommonDecoratorWrapper<Options,Method>(decoratorContext,methodContext,<Method>descriptor.value)                
+                descriptor.value = useCommonDecoratorWrapper<Options,U>(decoratorContext,methodContext,<U>descriptor.value)                
             }   
             return descriptor            
         };         
