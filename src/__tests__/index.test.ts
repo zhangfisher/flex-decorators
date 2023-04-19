@@ -1,7 +1,8 @@
 import { expect, test, beforeEach } from 'vitest'
 import { 
     createDecorator,getDecorators,DecoratorOptions ,
-    DecoratorManager
+    DecoratorManager,
+    hasDecorator
 } from "../index" 
 import {delay } from "flex-tools"
 
@@ -211,3 +212,26 @@ test("从实例中读取被指定装饰器装饰的方法",async ()=>{
     }    
 })
 
+
+
+test("判断是否存在指定的装饰器",()=>{
+    class A{
+        @log()
+        print(info:string){
+            return info
+        }
+    }
+    class B{
+        print(info:string){
+            return info
+        }
+    }
+    class AA extends A{        
+    }
+    let a1 = new A()
+    let b1 = new B()
+    let aa1 = new AA()
+    expect(hasDecorator(a1,"log")).toBe(true)
+    expect(hasDecorator(b1,"log")).toBe(false)
+    expect(hasDecorator(aa1,"log")).toBe(true)
+})

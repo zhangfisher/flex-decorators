@@ -102,7 +102,32 @@ export interface DecoratorManagerOptions{
     scope?: 'class' | 'instance' | 'global'             // 管理器作用域
     defaultDecoratorOptions?:Record<string,any>         // 装饰器默认参数，可以为作用域内装饰器提供通用参数
 }
- 
+
+/**
+ * 返回当前实例是否有指定装饰器装饰的方法
+ * 
+ * hasDecorator(<实例>,"装饰器名称")
+ * 
+ * @param instance 
+ * @param decoratorName 
+ * @returns 
+ */
+export function hasDecorator(instance:any,decoratorName:string):boolean{
+     // 返回缓存中的数据
+    let cache = instance.constructor.__DECORATORS__
+    if(cache && decoratorName && (decoratorName in cache)){
+        return true
+    } 
+    let propertyNames = getPropertyNames(instance)
+    for(let name of propertyNames){    
+        let metadata =  Reflect.getMetadata(`decorator:${decoratorName}`,instance,name)
+        if(metadata && metadata.length>0){
+            return true
+        }   
+    }
+    return false
+}
+
 /**
  * 管理器的状态
  */

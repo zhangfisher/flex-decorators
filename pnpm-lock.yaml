@@ -2,8 +2,8 @@ lockfileVersion: '6.0'
 
 dependencies:
   flex-tools:
-    specifier: ^1.0.74
-    version: 1.0.74
+    specifier: ^1.0.75
+    version: 1.0.75
   reflect-metadata:
     specifier: ^0.1.13
     version: 0.1.13
@@ -943,8 +943,8 @@ packages:
       path-exists: 4.0.0
     dev: true
 
-  /flex-tools@1.0.74:
-    resolution: {integrity: sha512-NHdmkxYdh1XcwOe0pGd3jAyMBVgd8Bbnu1nfqU8hZCCTdPxXlE6+tAt+o00qUT3NyFbimo0c3uy7xi3iu+P7Ig==}
+  /flex-tools@1.0.75:
+    resolution: {integrity: sha512-RDnLqxASRil43dyFRtW7nS2hmSEH2uI5B/u0OT0d3a+HfsekjyA5Ojc+7W+GthLLTBF+Pkr3RxwOgbZ1s8/3vQ==}
     dependencies:
       fs-extra: 11.1.1
       shelljs: 0.8.5

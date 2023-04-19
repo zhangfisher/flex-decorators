@@ -78,7 +78,7 @@
         }
     },
     "dependencies": {
-        "flex-tools": "^1.0.74",
+        "flex-tools": "^1.0.75",
         "reflect-metadata": "^0.1.13",
         "throttle-debounce": "^5.0.0"
     },

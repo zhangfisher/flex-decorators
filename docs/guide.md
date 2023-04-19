@@ -629,3 +629,19 @@ getDecorators(new MyClass1())
 let manager:CacheManager = cache.getManager()
 manager.getMethods(new MyClass1())        //== getDecorators(new MyClass1(),"cache") 
 ```
+## 检查对象是否存在装饰器
+
+使用`hasDecorator`方法判断当前对象实例是否有使用了某个装饰器。
+
+```typescript
+import { hasDecorator } from 'flex-decorators'
+class A{
+    @log()
+    method1(){}
+}
+class B{
+    method1(){}
+}
+hasDecorator(new A(),"log") // == true
+hasDecorator(new B(),"log") // == false
+```
