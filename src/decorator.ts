@@ -415,7 +415,7 @@ function createDecoratorManager(decoratorName: string,managerOptions: DecoratorM
  * 
  */
  
-export function createDecorator<Options extends DecoratorOptions,DefaultOption=never,Method=any>(decoratorName:string,defaultOptions?:Options,opts?:createDecoratorOptions<Options,Method>): DecoratorCreator<Options,Method,DefaultOption>{
+export function createDecorator<Options extends DecoratorOptions,DefaultOptionItem=never,Method=any>(decoratorName:string,defaultOptions?:Options,opts?:createDecoratorOptions<Options,Method>): DecoratorCreator<Options,Method,DefaultOptionItem>{
     let createOptions:createDecoratorOptions<Options,Method> = assignObject({
         singleton:true,
         autoReWrapper:true,
@@ -451,7 +451,7 @@ export function createDecorator<Options extends DecoratorOptions,DefaultOption=n
     }    
     
     // T:装饰器参数,D:装饰器默认值的类型
-    function decorator(options?: Options | DefaultOption ):TypedMethodDecorator<Method> {        
+    function decorator(options?: Options | DefaultOptionItem ):TypedMethodDecorator<Method> {        
         return function<U extends Method>(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<U>):TypedPropertyDescriptor<U> | void {            
             // 当前装饰方法的上下文对象,
             let methodContext:DecoratorMethodContext= {

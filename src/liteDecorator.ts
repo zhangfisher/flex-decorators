@@ -2,10 +2,7 @@ import { TypedMethodDecorator,createDecoratorOptions, DecoratorContext,  Decorat
 
 // 简化版装饰器
 export type createLiteDecoratorOptions<T>  = Exclude<createDecoratorOptions<T,any>,'manager' | 'autoReWrapper' | 'wrapper'> 
-export interface LiteDecoratorCreator<T,M,D> {
-    (options?:T | D):TypedMethodDecorator<M> 
-}
-
+export type LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION_ITEM> = <U extends OPTIONS | DEFAULT_OPTION_ITEM = OPTIONS>(options?:U) => TypedMethodDecorator<METHOD> 
 
 /**
  * 创建一个简单的装饰器，不包括管理器，仅注入一些装饰元数据，以可以通过
@@ -23,17 +20,17 @@ export interface LiteDecoratorCreator<T,M,D> {
  * 
  */
 
-export function createLiteDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPTION=any,METHOD=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>{
+export function createLiteDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPTION_TYPE=never,METHOD=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION_TYPE>{
     let createOptions:createLiteDecoratorOptions<OPTIONS> = Object.assign({},opts)
     // 保存装饰器上下文信息
     let decoratorContext:DecoratorContext = {
         defaultOptions:defaultOptions as Record<string,any>,         // 装饰器默认参数
-        createOptions,                                                  // 创建装饰器的参数
+        createOptions,                                               // 创建装饰器的参数
         decoratorName,
         manager: undefined
     }    
     // T:装饰器参数,D:装饰器默认值的类型
-    function decorator(options?: OPTIONS | DEFAULT_OPTION ):TypedMethodDecorator<METHOD> {        
+    function decorator<O extends OPTIONS | DEFAULT_OPTION_TYPE,M extends METHOD=METHOD>(options?: O ):TypedMethodDecorator<M> {        
         return function<U extends METHOD>(this:any,target: Object, propertyKey: string | symbol,descriptor:TypedPropertyDescriptor<U>):TypedPropertyDescriptor<U> | void  {            
             // 当前装饰方法的上下文对象,
             let methodContext:DecoratorMethodContext= {
@@ -43,7 +40,7 @@ export function createLiteDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPT
                 asyncOptionsReader:false
             }      
             // 1. 处理装饰器参数：
-            handleDecoratorOptions<OPTIONS>(decoratorContext,methodContext,options as OPTIONS)        
+            handleDecoratorOptions<OPTIONS>(decoratorContext,methodContext,options as any)        
             // 2. 定义元数据, 如果多个装饰器元数据会合并后放在数组中
             defineDecoratorMetadata<OPTIONS>(decoratorContext,methodContext) 
             return descriptor            
@@ -52,4 +49,23 @@ export function createLiteDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPT
     return decorator 
 }
 
- 
+// 
+// interface TestOptions extends DecoratorOptions{
+//     value:number
+// }
+// const  test = createLiteDecorator<TestOptions>("test",{
+//     value:1,
+//     id:''
+// })
+
+// class MyClass{
+//     @test({aa:1})
+//     onLoaded(){}
+//     @test({value:1})
+//     onLoadedd(){}
+//     @test({value:"fdfdfdf"})
+//     onLoadedd4(){}
+// }
+
+
+
