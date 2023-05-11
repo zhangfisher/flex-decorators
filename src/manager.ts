@@ -3,8 +3,10 @@
  */
 
 import { hasOwnProperty } from "./utils";
-import { asyncSignal, IAsyncSignal,getPropertyNames } from "flex-tools"
-import type { AllowEmpty,TypedClassDecorator, Constructor, ImplementOf} from "flex-tools"; 
+import { isPlainObject } from "flex-tools/typecheck/isPlainObject"
+import { asyncSignal } from "flex-tools/async/asyncSignal"
+import { getPropertyNames  } from "flex-tools/object/getPropertyNames"
+import type { IAsyncSignal,AllowEmpty,TypedClassDecorator, Constructor, ImplementOf} from "flex-tools"; 
 import { DecoratorContext, DecoratorMethodContext, DecoratorOptions } from "./decorator";
 
 /**
@@ -41,12 +43,14 @@ export function getDecorators<T extends DecoratorOptions=DecoratorOptions>(insta
     },options)
     // 返回缓存中的数据
     let cache = instance.constructor.__DECORATORS__
-    if(opts?.cache && cache){
-        if(decoratorName && decoratorName in cache){
-            return cache[decoratorName]
+    if(opts?.cache && isPlainObject(cache) && Object.keys(cache).length>0){
+        if(decoratorName){
+            if(decoratorName in cache){
+                return cache[decoratorName]
+            }
         }else{
-            return cache as DecoratorList
-        }        
+            return cache
+        }
     }
     let metadatas:DecoratorList | DecoratedMethodList = {} ;
 
