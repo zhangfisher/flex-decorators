@@ -5,8 +5,8 @@ dependencies:
     specifier: ^20.1.2
     version: 20.1.2
   flex-tools:
-    specifier: ^1.1.9
-    version: 1.1.9
+    specifier: ^1.1.17
+    version: 1.1.17
   reflect-metadata:
     specifier: ^0.1.13
     version: 0.1.13
@@ -941,8 +941,8 @@ packages:
       path-exists: 4.0.0
     dev: true
 
-  /flex-tools@1.1.9:
-    resolution: {integrity: sha512-c+/65sLG9CBBeQR2Eno5ySBGjbWEY6ks1LV4Cj4cWt9n6sbj+gm4Dgs1vCM73pAKQAfOb5atv6S1I8vPVilSkg==}
+  /flex-tools@1.1.17:
+    resolution: {integrity: sha512-M+hhlsMhvocEV5BPDJEknta0Q9Bbm7WRRT72PDkPpJcrC66vDE4UxvCiBwNb7b3LmVefis9/t2q+CI8XqXG/WQ==}
     dependencies:
       fs-extra: 11.1.1
       shelljs: 0.8.5
