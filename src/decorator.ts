@@ -3,7 +3,10 @@ import { DecoratorManager,IDecoratorManager, createManagerDecorator   } from './
 import {firstUpper, pick } from "./utils"
 import type {ManagerDecoratorCreator,DecoratorManagerOptions}  from "./manager"
 import type { Constructor, ImplementOf, WithReturnFunction } from "flex-tools"
-import { isDiff, isClass, isAsyncFunction, assignObject } from 'flex-tools';
+import { isDiff } from 'flex-tools/object/isDiff';
+import { isClass } from 'flex-tools/typecheck/isClass';
+import { isAsyncFunction } from 'flex-tools/typecheck/isAsyncFunction';
+import { assignObject } from 'flex-tools/object/assignObject';
 
 export type DecoratorMethodWrapperOptions<T> =T extends (DecoratorOptionsReader<T>) ? DecoratorOptionsReader<T> : T
 

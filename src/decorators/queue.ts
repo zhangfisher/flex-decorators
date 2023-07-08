@@ -8,9 +8,15 @@
  */
 import { createDecorator  } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
-import {AllowEmpty, assignObject, AsyncFunction, FlexEventListener } from "flex-tools"
+import type {AllowEmpty, AsyncFunction, IAsyncSignal,FlexEventListener } from "flex-tools"
 import {DecoratorManager,  DecoratorManagerOptions, IDecoratorManager  } from "../manager"
-import { FlexEvent, applyParams, delay,asyncSignal,IAsyncSignal,timeout as timeoutWrapper } from "flex-tools"
+import { FlexEvent} from "flex-tools/events/flexEvent"
+import { applyParams} from "flex-tools/func/applyParams"
+import { delay } from "flex-tools/async/delay"
+import { asyncSignal } from "flex-tools/async/asyncSignal"
+import { assignObject } from "flex-tools/object/assignObject"
+
+import { timeout as timeoutWrapper } from "flex-tools"
 import { isFunction } from "../utils" 
 
 export type QueueFailureBehaviour  = "ignore" | "retry" | "requeue"

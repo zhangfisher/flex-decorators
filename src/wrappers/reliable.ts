@@ -1,7 +1,12 @@
 import type { AsyncFunction } from "flex-tools";
-import { noReentry,timeout,retry,memorize,applyParams } from "flex-tools"
+import { noReentry} from "flex-tools/func/noReentry"
+import { timeout} from "flex-tools/func/timeout"
+import { retry } from "flex-tools/func/retry"
+import { memorize } from "flex-tools/func/memorize"
+import { applyParams } from "flex-tools/func/applyParams"
 import debounce from "./debounce"
 import throttle from "./throttle"
+
 /**
  *
  * 包装函数，使具备重试、超时特性

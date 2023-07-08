@@ -1,5 +1,7 @@
-import { deepMerge, getPropertyNames, isPlainObject } from "flex-tools"
- 
+import { deepMerge  } from "flex-tools/object/deepMerge"
+import { getPropertyNames } from "flex-tools/object/getPropertyNames"
+import { isPlainObject } from "flex-tools/typecheck/isPlainObject"
+
 export function hasOwnProperty(instance: any, propertyName: string) :boolean{
     return getPropertyNames(instance).includes(propertyName);
 }

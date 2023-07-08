@@ -1,7 +1,7 @@
 
 import { createDecorator } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
-import { retry as retryWrapper} from "flex-tools"
+import { retry as retryWrapper} from "flex-tools/func/retry"
  
 export interface RetryOptions extends DecoratorOptions {
     count?   : number               // 重试次数

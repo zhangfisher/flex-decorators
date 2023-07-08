@@ -23,7 +23,7 @@
 
 import { createDecorator } from "../decorator"
 import type {DecoratorOptions} from "../decorator"
-import { memorize as memorizeWrapper } from "flex-tools"
+import { memorize as memorizeWrapper } from "flex-tools/func/memorize"
 
 export interface MemorizeOptions extends DecoratorOptions { 
     // 根据参数计算hash值的函数 | length=参数个数 | undefined=永远返回最近的值

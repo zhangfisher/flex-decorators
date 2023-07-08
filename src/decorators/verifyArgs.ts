@@ -19,7 +19,9 @@
 
  import { createDecorator } from "../decorator"
  import type {DecoratorOptions} from "../decorator"
-import { deepMerge, isAsyncFunction, isPlainObject  } from "flex-tools"
+import { deepMerge } from "flex-tools/object/deepMerge"
+import { isAsyncFunction  } from "flex-tools/typecheck/isAsyncFunction"
+import { isPlainObject  } from "flex-tools/typecheck/isPlainObject"
 import { mixinArray } from "../utils"
 
  export interface VerifyArgsOptions extends DecoratorOptions { 
