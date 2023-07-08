@@ -9,7 +9,7 @@
     "scripts": {
         "build": "tsup",
         "test": "pnpm vitest",
-        "release": "tsup && npm version patch && npm publish"
+        "release": "tsup && npm version patch && npm publish && cnpm sync flex-decorators"
     },
     "files": [
         "dist/",
