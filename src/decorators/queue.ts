@@ -15,8 +15,7 @@ import { applyParams} from "flex-tools/func/applyParams"
 import { delay } from "flex-tools/async/delay"
 import { asyncSignal } from "flex-tools/async/asyncSignal"
 import { assignObject } from "flex-tools/object/assignObject"
-
-import { timeout as timeoutWrapper } from "flex-tools"
+import { timeout as timeoutWrapper } from "flex-tools/func/timeout"
 import { isFunction } from "../utils" 
 
 export type QueueFailureBehaviour  = "ignore" | "retry" | "requeue"
