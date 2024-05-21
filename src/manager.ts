@@ -6,8 +6,9 @@ import { hasOwnProperty } from "./utils";
 import { isPlainObject } from "flex-tools/typecheck/isPlainObject"
 import { asyncSignal } from "flex-tools/async/asyncSignal"
 import { getPropertyNames  } from "flex-tools/object/getPropertyNames"
-import type { IAsyncSignal,AllowEmpty,TypedClassDecorator, Constructor, ImplementOf} from "flex-tools"; 
+import type { IAsyncSignal,AllowEmpty,Constructor, ImplementOf} from "flex-tools"; 
 import { DecoratorContext, DecoratorMethodContext, DecoratorOptions } from "./decorator";
+import { TypedClassDecorator } from "./types";
 
 /**
  * getDecorators返回的当前实例的装饰器信息

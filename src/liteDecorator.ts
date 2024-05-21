@@ -20,7 +20,7 @@ export type LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION_ITEM> = <U extend
  * 
  */
 
-export function createLiteDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPTION_TYPE=never,METHOD=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION_TYPE>{
+export function createDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPTION_TYPE=never,METHOD=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION_TYPE>{
     let createOptions:createLiteDecoratorOptions<OPTIONS> = Object.assign({},opts)
     // 保存装饰器上下文信息
     let decoratorContext:DecoratorContext = {
@@ -49,18 +49,20 @@ export function createLiteDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPT
     return decorator 
 }
 
-// 
+// // 
 // interface TestOptions extends DecoratorOptions{
 //     value:number
 // }
-// const  test = createLiteDecorator<TestOptions>("test",{
+// const  test = createLiteDecorator<TestOptions,TestOptions,()=>number>("test",{
 //     value:1,
 //     id:''
 // })
 
 // class MyClass{
 //     @test({aa:1})
-//     onLoaded(){}
+//     onLoaded(){
+//     return 1
+//     }
 //     @test({value:1})
 //     onLoadedd(){}
 //     @test({value:"fdfdfdf"})

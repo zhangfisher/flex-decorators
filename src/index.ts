@@ -1,4 +1,4 @@
 export * from "./decorator"
 export * from "./manager" 
-export * from "./utils" 
-export * from "./liteDecorator"
+export * from "./utils"  
+export * from "./types"

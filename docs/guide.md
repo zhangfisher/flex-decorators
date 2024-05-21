@@ -53,14 +53,14 @@ function createDecorator<Options extends DecoratorOptions,DefaultOption=never,Me
 
 ```typescript
 
- export function createLiteDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPTION=any,METHOD=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>
+ export function createDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPTION=any,METHOD=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION>
 ```
 
 使用方法如下:
 ```typescript
-import { createLiteDecorator } from "flex-decorators"
+import { createDecorator } from "flex-decorators/lite"
 
-const cache = createLiteDecorator("cache")
+const cache = createDecorator("cache")
 
 class MyClass{
     constructor(){
