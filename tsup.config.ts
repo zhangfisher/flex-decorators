@@ -13,8 +13,7 @@ const banner =`/**
 export default defineConfig([
     {
         entry: [
-            'src/index.ts',
-            'src/liteDecorator.ts',
+            'src/index.ts', 
             'src/decorators/*.ts'
         ],            
         format: ['cjs', 'esm'],

@@ -20,7 +20,7 @@ export type LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION_ITEM> = <U extend
  * 
  */
 
-export function createDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPTION_TYPE=never,METHOD=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION_TYPE>{
+export function createLiteDecorator<OPTIONS extends DecoratorOptions,DEFAULT_OPTION_TYPE=never,METHOD=any>(decoratorName:string,defaultOptions?:OPTIONS,opts?:createLiteDecoratorOptions<OPTIONS>): LiteDecoratorCreator<OPTIONS,METHOD,DEFAULT_OPTION_TYPE>{
     let createOptions:createLiteDecoratorOptions<OPTIONS> = Object.assign({},opts)
     // 保存装饰器上下文信息
     let decoratorContext:DecoratorContext = {

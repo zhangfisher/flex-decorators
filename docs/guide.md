@@ -58,9 +58,9 @@ function createDecorator<Options extends DecoratorOptions,DefaultOption=never,Me
 
 使用方法如下:
 ```typescript
-import { createDecorator } from "flex-decorators/lite"
+import { createLiteDecorator } from "flex-decorators"
 
-const cache = createDecorator("cache")
+const cache = createLiteDecorator("cache")
 
 class MyClass{
     constructor(){

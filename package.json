@@ -21,11 +21,6 @@
             "require": "./dist/index.js",
             "import": "./dist/index.mjs"
         },
-        "./lite": {
-            "types": "./dist/liteDecorator.d.ts",
-            "require": "./dist/liteDecorator.js",
-            "import": "./dist/liteDecorator.mjs"
-        },
         "./timeout": {
             "types": "./dist/decorators/timeout.d.ts",
             "require": "./dist/decorators/timeout.js",
